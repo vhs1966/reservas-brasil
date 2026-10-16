@@ -4,41 +4,35 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 
-# Configuración de la página
-st.set_page_config(page_title="BR Control de Reservas - Brasil", layout="wide")
+# Configuración de la página (Layout wide para aprovechar el espacio)
+st.set_page_config(page_title="BR Control de Reservas", layout="wide")
 
-# Estilos personalizados para móviles
+# Estilos personalizados para compactar la interfaz y mejorar visualización móvil
 st.markdown("""
     <style>
-    .main { padding: 1rem; }
-    .stButton>button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
-        background-color: #007bff;
-        color: white;
-    }
-    input, select { font-size: 16px !important; }
+    .main .block-container { padding-top: 1rem; padding-bottom: 1rem; }
+    h1 { font-size: 1.5rem !important; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.2rem !important; margin-top: 1rem; }
+    .stNumberInput, .stTextInput, .stDateInput, .stSelectbox { margin-bottom: -10px; }
+    div[data-testid="stForm"] { padding: 10px; border-radius: 10px; }
+    /* Ajuste para que los inputs se vean bien en pantallas pequeñas */
+    input { font-size: 14px !important; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- CONEXIÓN A GOOGLE SHEETS ---
 def conectar_gsheets():
     try:
-        # Usa las credenciales de st.secrets (Configuradas en Streamlit Cloud)
         scope = ["https://www.googleapis.com/auth/spreadsheets"]
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
         client = gspread.authorize(creds)
-        
-        # ID de tu hoja (el que sacamos de la URL)
         spreadsheet_id = "1ch4-13lpkAZRdN3cuj5QJTLAKs5bUIW8K3ckbzbVhZw" # REEMPLAZA CON TU ID REAL
-        sheet = client.open_by_key(spreadsheet_id).get_worksheet(0) # Abre la primera pestaña
+        sheet = client.open_by_key(spreadsheet_id).get_worksheet(0)
         return sheet
     except Exception as e:
         st.error(f"Error de conexión: {e}")
         return None
 
-# Cargar datos desde Google Sheets
 def obtener_datos(sheet):
     if sheet:
         data = sheet.get_all_records()
@@ -46,36 +40,48 @@ def obtener_datos(sheet):
     return pd.DataFrame()
 
 # --- INTERFAZ ---
-st.title("🇧🇷 BR Control de Reservas - Brasil")
+st.title("🇧🇷 Control de Reservas")
 
 sheet = conectar_gsheets()
 
-# Formulario de Carga
-st.header("➕ Cargar Nueva Reserva")
-
+# Formulario de Carga Compacto
 with st.form("form_reserva", clear_on_submit=True):
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        depto = st.selectbox("Selecciona el Departamento", ["Robles", "Naciones", "Costa"])
-        fecha_inicio = st.date_input("Fecha de Inicio", datetime.now())
+    # Fila 1: Departamento y Estado
+    c1, c2 = st.columns(2)
+    with c1:
+        depto = st.selectbox("Departamento", ["Robles", "Naciones", "Costa"])
+    with c2:
         estado = st.selectbox("Estado", ["Alquilado", "Disponible", "Reservado"])
+
+    # Fila 2: Fechas una al lado de la otra
+    f1, f2 = st.columns(2)
+    with f1:
+        fecha_inicio = st.date_input("Inicio", datetime.now())
+    with f2:
+        fecha_fin = st.date_input("Fin", datetime.now())
+
+    # Fila 3: Inquilino y Teléfono
+    i1, i2 = st.columns(2)
+    with i1:
+        inquilino = st.text_input("Inquilino")
+    with i2:
+        telefono = st.text_input("Teléfono")
         
-    with col2:
-        fecha_fin = st.date_input("Fecha de Fin", datetime.now())
-        inquilino = st.text_input("Nombre del Inquilino")
-        telefono = st.text_input("Teléfono de Contacto")
-        
-    precio = st.number_input("Precio por Día ($)", min_value=0.0, step=10.0, format="%.2f")
+    # Fila 4: Precio en Reales (R$)
+    p1, p2 = st.columns([1, 1])
+    with p1:
+        precio = st.number_input("Precio por Día (R$)", min_value=0.0, step=10.0, format="%.2f")
     
     # Cálculos Automáticos
     dias_estadia = (fecha_fin - fecha_inicio).days
     if dias_estadia < 0: dias_estadia = 0
     total_reserva = dias_estadia * precio
     
-    st.info(f"📊 **Resumen:** {dias_estadia} días de estadía | **Total:** ${total_reserva:,.2f}")
+    with p2:
+        st.markdown(f"**Total:**  
+**R$ {total_reserva:,.2f}** ({dias_estadia} d.)")
     
-    submit = st.form_submit_button("Guardar Reserva")
+    submit = st.form_submit_button("Confirmar y Guardar")
 
     if submit:
         if inquilino and telefono and sheet:
@@ -92,20 +98,20 @@ with st.form("form_reserva", clear_on_submit=True):
             ]
             try:
                 sheet.append_row(nueva_fila)
-                st.success("✅ Reserva guardada con éxito en Google Sheets")
+                st.success("✅ Guardado")
                 st.rerun()
             except Exception as e:
-                st.error(f"Error al guardar: {e}")
+                st.error(f"Error: {e}")
         elif not sheet:
-            st.error("No hay conexión con la planilla.")
+            st.error("Error de conexión.")
         else:
-            st.error("⚠️ Por favor, completa los campos obligatorios.")
+            st.warning("Completa los campos.")
 
 # Tabla de Reservas
-st.header("📋 Reservas Registradas")
-
+st.subheader("📋 Historial")
 df = obtener_datos(sheet)
 if not df.empty:
-    st.dataframe(df, use_container_width=True)
+    # Mostramos la tabla compacta
+    st.dataframe(df, use_container_width=True, hide_index=True)
 else:
-    st.info("No hay datos disponibles en la planilla.")
+    st.info("Sin datos.")
