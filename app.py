@@ -4,7 +4,7 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="Reservas Brasil", page_icon="🇧🇷", layout="centered")
+st.set_page_config(page_title='Reservas Brasil', page_icon="🇧🇷", layout="centered")
 st.title("🇧🇷 Control de Reservas - Brasil")
 
 # Conexión directa y automática usando el archivo del cofre digital
