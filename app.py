@@ -13,12 +13,21 @@ def cargar_datos():
     import json
     import os
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    # Ponemos el nombre largo original exacto de tu nuevo archivo activo
-    ruta_clave = os.path.join(base_dir, 'reservasbrasil-8a9dc35bc6af.json')
+    
+    # 1. Buscamos tu archivo de clave nuevo en la raíz del servidor
+    # (Buscá en tu GitHub y poné acá el nombre largo exacto de tu archivo activo actual)
+    nombre_archivo = 'reservasbrasil-8a9dc35bc6af.json' 
+    ruta_clave = os.path.join(base_dir, nombre_archivo)
     
     with open(ruta_clave, 'r') as f:
         info_claves = json.load(f)
+        
+    # 2. UNIFICACIÓN GEOMÉTRICA: Forzamos al código a usar el nombre del Cloud correcto
+    info_claves["project_id"] = "reservasbrasil"
+    
     gc = gspread.service_account_from_dict(info_claves)
+    
+    # 3. Buscamos el nombre visible de tu planilla de Excel en Drive
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
