@@ -10,24 +10,18 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 # Conexión directa y automática usando el archivo del cofre digital
 @st.cache_data(ttl=2)
 def cargar_datos():
-    import json
-    import os
-    
-    # Buscamos la ruta absoluta del archivo en el servidor
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    ruta_completa = os.path.join(base_dir, 'clave.json')
-    
-    # Conectamos usando la ruta física exacta
-    gc = gspread.service_account(filename=ruta_completa)
+      # Conexión directa y nativa al archivo de la raíz
+    gc = gspread.service_account(filename='clave.json')
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
     return worksheet, pd.DataFrame(data)
 
+
 try:
     worksheet, df = cargar_datos()
 except Exception as e:
-    st.error("Conectando con Google Sheets... Si el cartel no desaparece, verifique los permisos de la planilla.")
+    st.error(f"⛔ Error de conexión real: {e}")
     df = pd.DataFrame()
 
 # ----------------- FORMULARIO DE CARGA -----------------
