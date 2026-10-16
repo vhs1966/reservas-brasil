@@ -40,7 +40,7 @@ def conectar_google_sheets():
     cliente = gspread.authorize(credenciales)
 
     # Reemplaza este texto por el ID de la hoja, no por su nombre.
-    archivo = cliente.open_by_key("PEGA_AQUI_EL_ID_REAL_DE_TU_SHEET")
+    archivo = cliente.open_by_key("1ch4-13lpkAZRdN3cuj5QJTLAKs5bUIW8K3ckbzbVhZw")
 
     # Si la pestaña se llama distinto, cambia "Reservas".
     try:
