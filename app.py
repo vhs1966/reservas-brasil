@@ -11,7 +11,7 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 @st.cache_data(ttl=2)
 def cargar_datos():
       # Conexión directa y nativa al archivo de la raíz
-    gc = gspread.service_account(filename='reservasbrasil-a8d99ffe00e6.json')
+    gc = gspread.service_account(filename='reservasbrasil-81838e28d588.json')
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
