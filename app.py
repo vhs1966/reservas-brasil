@@ -7,12 +7,11 @@ from datetime import datetime
 st.set_page_config(page_title="Reservas Brasil", page_icon="🇧🇷", layout="centered")
 st.title("🇧🇷 Control de Reservas - Brasil")
 
-# Conexión directa y segura usando las credenciales secretas de Streamlit
+# Conexión directa y automática usando el archivo del cofre digital
 @st.cache_data(ttl=2)
 def cargar_datos():
-    # Cargamos el diccionario de claves que vamos a configurar después
-    info_claves = st.secrets["gcp_service_account"]
-    gc = gspread.service_account_from_dict(info_claves)
+    # El programa lee el archivo clave.json de forma interna e infalible
+    gc = gspread.service_account(filename='clave.json')
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
@@ -21,7 +20,7 @@ def cargar_datos():
 try:
     worksheet, df = cargar_datos()
 except Exception as e:
-    st.error("Esperando la conexión segura de Google... Configurar las credenciales en Streamlit.")
+    st.error("Conectando con Google Sheets... Si el cartel no desaparece, verifique los permisos de la planilla.")
     df = pd.DataFrame()
 
 # ----------------- FORMULARIO DE CARGA -----------------
@@ -70,12 +69,12 @@ with st.form("nueva_reserva", clear_on_submit=True):
                 float(total_pagar)
             ]
             
-            if not df.empty:
+            if not df.empty or len(df) == 0:
                 worksheet.append_row(nueva_fila)
                 st.success(f"✅ ¡Reserva guardada! {dias_estadia} días calculados. Total: ${total_pagar}")
                 st.rerun()
             else:
-                st.error("No se pudo guardar. Verifique las credenciales.")
+                st.error("No se pudo guardar. Intente nuevamente.")
 
 # ----------------- VISTA DE TABLA PARA AGENTES -----------------
 st.subheader("📋 Reservas Registradas")
