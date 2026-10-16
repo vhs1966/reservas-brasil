@@ -11,14 +11,19 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 @st.cache_data(ttl=2)
 def cargar_datos():
     import json
-    # El sistema abre de forma nativa tu archivo nuevo sin alterar la firma digital
-    with open('reservasbrasil-81838e28d588.json', 'r') as f:
+    import os
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    # Ponemos el nombre largo original exacto de tu nuevo archivo activo
+    ruta_clave = os.path.join(base_dir, 'reservasbrasil-8a9dc35bc6af.json')
+    
+    with open(ruta_clave, 'r') as f:
         info_claves = json.load(f)
     gc = gspread.service_account_from_dict(info_claves)
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
     return worksheet, pd.DataFrame(data)
+
 
 
 try:
