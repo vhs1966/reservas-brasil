@@ -12,10 +12,12 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 # Conexión ultra segura y blindada por Base64
 @st.cache_data(ttl=2)
 def cargar_datos():
-    # El programa lee el diccionario seguro de la cajita de secretos de forma oficial
+    # El programa lee tus secretos de forma directa y oficial
     info_claves = dict(st.secrets["gcp_service_account"])
     gc = gspread.service_account_from_dict(info_claves)
-    sh = gc.open('Reservas Brasil')
+    
+    # Conexión directa por ID: saltea cualquier error de búsqueda 404
+    sh = gc.open_by_key('1ch4-13lpkAZRdN3cuj5QJTLAKs5bUIW8K3ckbzbVhZw')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
     return worksheet, pd.DataFrame(data)
