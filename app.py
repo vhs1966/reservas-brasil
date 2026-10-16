@@ -17,7 +17,7 @@ def cargar_datos():
     gc = gspread.service_account_from_dict(info_claves)
     
     # Conexión directa por ID: saltea cualquier error de búsqueda 404
-    sh = gc.open_by_key('Reservas Brasil')
+    sh = gc.open_by_key('Reservas-Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
     return worksheet, pd.DataFrame(data)
