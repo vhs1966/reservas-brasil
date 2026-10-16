@@ -11,12 +11,12 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 @st.cache_data(ttl=2)
 def cargar_datos():
     # El programa lee el archivo clave.json de forma interna e infalible
-    gc = gspread.service_account(filename='clave.json')
+    import os
+    gc = gspread.service_account(filename=os.path.abspath('clave.json'))
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
     return worksheet, pd.DataFrame(data)
-
 try:
     worksheet, df = cargar_datos()
 except Exception as e:
