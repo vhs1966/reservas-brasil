@@ -10,9 +10,9 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 # Conexión directa y automática usando el archivo del cofre digital
 @st.cache_data(ttl=2)
 def cargar_datos():
-    # El programa lee el archivo clave.json de forma interna e infalible
-    import os
-    gc = gspread.service_account(filename=os.path.abspath('clave.json'))
+    # El programa lee el diccionario seguro de la cajita de secretos de una
+    info_claves = st.secrets["gcp_service_account"]
+    gc = gspread.service_account_from_dict(info_claves)
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
