@@ -1,89 +1,143 @@
 import streamlit as st
 import gspread
-from google.oauth2.service_account import Credentials
 import pandas as pd
-from datetime import datetime
-import base64
-import json
+from google.oauth2.service_account import Credentials
+from datetime import date
 
-st.set_page_config(page_title="Reservas Brasil", page_icon="🇧🇷", layout="centered")
+st.set_page_config(
+    page_title="Control de Reservas - Brasil",
+    page_icon="🇧🇷",
+    layout="centered",
+)
+
 st.title("🇧🇷 Control de Reservas - Brasil")
 
-# Conexión ultra segura y blindada por Base64
-@st.cache_data(ttl=2)
-def cargar_datos():
-    # El programa lee tus secretos de forma directa y oficial
-    info_claves = dict(st.secrets["gcp_service_account"])
-    gc = gspread.service_account_from_dict(info_claves)
-    
-    # Conexión directa por ID: saltea cualquier error de búsqueda 404
-    sh = gc.open_by_key('Reservas-Brasil')
-    worksheet = sh.get_worksheet(0)
-    data = worksheet.get_all_records()
-    return worksheet, pd.DataFrame(data)
+# Encabezados que tendrá la hoja de Google Sheets.
+ENCABEZADOS = [
+    "Departamento",
+    "Fecha de inicio",
+    "Fecha de fin",
+    "Estado",
+    "Nombre del huésped",
+    "Teléfono de contacto",
+    "Precio por día (R$)",
+]
 
+
+@st.cache_resource
+def conectar_google_sheets():
+    """Conecta con Google Sheets y devuelve la hoja de trabajo."""
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    credenciales = Credentials.from_service_account_info(
+        dict(st.secrets["gcp_service_account"]),
+        scopes=scopes,
+    )
+
+    cliente = gspread.authorize(credenciales)
+
+    # Reemplaza este texto por el ID de la hoja, no por su nombre.
+    archivo = cliente.open_by_key("PEGA_AQUI_EL_ID_REAL_DE_TU_SHEET")
+
+    # Si la pestaña se llama distinto, cambia "Reservas".
+    try:
+        hoja = archivo.worksheet("Reservas")
+    except gspread.WorksheetNotFound:
+        hoja = archivo.add_worksheet(title="Reservas", rows=1000, cols=len(ENCABEZADOS))
+
+    # Agrega los encabezados si la pestaña está vacía.
+    if not hoja.row_values(1):
+        hoja.append_row(ENCABEZADOS)
+
+    return hoja
+
+
+# Intenta conectar antes de mostrar el formulario.
 try:
-    worksheet, df = cargar_datos()
+    worksheet = conectar_google_sheets()
+    error_conexion = None
 except Exception as e:
-    st.error(f"⛔ Error de conexión real: {e}")
-    df = pd.DataFrame()
+    worksheet = None
+    error_conexion = str(e)
 
-# ----------------- FORMULARIO DE CARGA -----------------
+if error_conexion:
+    st.error(
+        "No se pudo conectar con Google Sheets. "
+        "Revisa el ID de la hoja, las credenciales y los permisos de la cuenta de servicio."
+    )
+    with st.expander("Ver detalle del error"):
+        st.code(error_conexion)
+
 st.subheader("➕ Cargar Nueva Reserva")
-with st.form("nueva_reserva", clear_on_submit=True):
-    depto = st.selectbox("Seleccioná el Departamento", ["Costa", "Robles", "Naciones"])
-    
+
+with st.form("formulario_reserva", clear_on_submit=True):
+    departamento = st.selectbox(
+        "Seleccioná el Departamento",
+        ["Costa", "Centro", "Norte", "Sur"],
+    )
+
     col1, col2 = st.columns(2)
     with col1:
-        f_inicio = st.date_input("Fecha de Inicio", datetime.now(), format="DD/MM/YYYY")
+        fecha_inicio = st.date_input("Fecha de inicio", value=date.today())
     with col2:
-        f_fin = st.date_input("Fecha de Fin", datetime.now(), format="DD/MM/YYYY")
-        
-    estado = st.selectbox("Estado", ["Alquilado", "Reservado", "Disponible"])
-    inquilino = st.text_input("Nombre del Inquilino")
-    telefono = st.text_input("Teléfono de Contacto")
-    precio_dia = st.number_input("Precio por Día ($)", min_value=0.0, step=10.0, value=0.0)
-    
-    boton_guardar = st.form_submit_button("Guardar Reserva")
+        fecha_fin = st.date_input("Fecha de fin", value=date.today())
 
-    if boton_guardar:
-        if f_fin < f_inicio:
-            st.error("⛔ Error: La fecha de fin no puede ser anterior a la de inicio.")
-        elif inquilino == "":
-            st.error("⛔ Error: El nombre del inquilino es obligatorio.")
-        else:
-            dias_estadia = (f_fin - f_inicio).days
-            if dias_estadia == 0:
-                dias_estadia = 1
-                
-            total_pagar = dias_estadia * precio_dia
-            
-            f_inicio_str = f_inicio.strftime("%d/%m/%Y")
-            f_fin_str = f_fin.strftime("%d/%m/%Y")
-            
-            nueva_fila = [
-                depto, 
-                f_inicio_str, 
-                f_fin_str, 
-                estado, 
-                inquilino, 
-                str(telefono), 
-                int(dias_estadia), 
-                float(precio_dia), 
-                float(total_pagar)
-            ]
-            
-            if not df.empty or len(df) == 0:
-                worksheet.append_row(nueva_fila)
-                st.success(f"✅ ¡Reserva guardada! {dias_estadia} días calculados. Total: ${total_pagar}")
-                st.rerun()
-            else:
-                st.error("No se pudo guardar. Intente nuevamente.")
+    estado = st.selectbox(
+        "Estado",
+        ["Alquilado", "Disponible", "Pendiente"],
+    )
 
-# ----------------- VISTA DE TABLA PARA AGENTES -----------------
+    nombre = st.text_input("Nombre del huésped")
+    telefono = st.text_input("Teléfono de contacto")
+    precio = st.number_input(
+        "Precio por día (R$)",
+        min_value=0.0,
+        step=10.0,
+        format="%.2f",
+    )
+
+    enviado = st.form_submit_button("Guardar Reserva")
+
+if enviado:
+    if worksheet is None:
+        st.error("No se puede guardar la reserva porque no hay conexión con Google Sheets.")
+    elif fecha_fin < fecha_inicio:
+        st.error("La fecha de fin no puede ser anterior a la fecha de inicio.")
+    elif not nombre.strip():
+        st.error("Ingresá el nombre del huésped.")
+    else:
+        nueva_reserva = [
+            departamento,
+            fecha_inicio.strftime("%d/%m/%Y"),
+            fecha_fin.strftime("%d/%m/%Y"),
+            estado,
+            nombre.strip(),
+            telefono.strip(),
+            precio,
+        ]
+
+        try:
+            worksheet.append_row(nueva_reserva, value_input_option="USER_ENTERED")
+            st.success("Reserva guardada correctamente.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"No se pudo guardar la reserva: {e}")
+
 st.subheader("📋 Reservas Registradas")
-if not df.empty:
-    columnas_validas = [c for c in ["Departamento", "Fecha de Inicio", "Fecha de Fin", "Estado", "Inquilino", "Total"] if c in df.columns]
-    st.dataframe(df[columnas_validas], use_container_width=True, hide_index=True)
+
+if worksheet is not None:
+    try:
+        registros = worksheet.get_all_records()
+
+        if registros:
+            df = pd.DataFrame(registros)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No hay reservas registradas todavía.")
+    except Exception as e:
+        st.error(f"No se pudieron cargar las reservas: {e}")
 else:
-    st.info("No hay reservas registradas todavía.")
+    st.info("Las reservas aparecerán aquí cuando se restablezca la conexión.")
