@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "reservasbrasil",
+  "private_key_id": "81838e28d588108e42c8497b1798f653905c8e54",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDmWIILr9f5swDz\nP/SsmfktgJpcq2cYhKXXh+hnfNTzToZipHxEMY8gcIgbf1/YSy++HMn0PQiuFgxe\n4lEqSYqFTop4cQlUBb4UClD5MDODS3L9z5ekYK0ujeEX0Csb2ujLtpKYdLRwT/rK\nPqw1O72gEZA92WHTmWJGeChphCrm1ApW1cR5IKdn+Dd7U/FxyPjDGVV2dhoqH60N\nVoiCXheBC7h9chysDGACCj1vPDKlWsBCUhjB/9OAkum5npTZj9CxtLDpyXItYz2V\n7DgVr3lIGDEAsQZVbXMIIleHQFR91xNMB4tO9tWM69tgYgT1q0tQtaCnXm05UFLZ\nR3lleOPvAgMBAAECggEAPWPoYOoAIy34elwYvymYNe7Y9Qq/gtLTilJP98jWznOm\nsEKLVfdpYGltdPqpFjHPqxjsIBpmJlN8/4rMu/r2npm0oO3rYQfYxWmMdCVLDVp9\n7rQ1g5s6fLZWf+y8mINq2OQzRMuRzX8bZWx3pAZkfvU/XqSBhI4UGZjrmFefwX3P\nQr3yCYuhB182We0hG9nXIekUKhDeFei/NZe6TsXQfjWGiI3wRrTbKUnYGGCK/Fa6\n7RD1kgRhMMAo/djBZZm7kwCjw+RylpiYx8ab8TbQo4jVN/URDkgRUYMIpI13UFhO\nFWg0TiOhUStvk6MFxQsb9d25+GoJYmAtHb1UK8SYxQKBgQD1ymLzGamApJoLm83x\nft+8/lUQBU8uHBsstVgHW4RgDqtO+SGsnMQnqTjLRwcVal217MsCDy+nuylzpi4M\nP+gD1KRmbagQgiqSPrxjtRhpbjpu5EeaxNe0dG+SS0q7r6iSoYDjvcDYBtHJaav8\nedfXt/awd/Y66OhGxASRHN21VQKBgQDv6eOJs7714h8KwSP5yxq6qXrzS/t8JbhF\nPkPvNVgVB21KszsBQOKyEXC2wREXF03AI00VQzJDxtuaf1/sj38cYw8IrRhWspzo\nZQY5O26H+p3sx42V0JLvrOyvEJa73AfJxTCDsoqAR08jYc47i+JT9e/x70E9/ygS\nNfQqepa0MwKBgQCJjM17Rm05dORQgszpzRrg5WQtJwt8vnXmu0WcOHcIWq078OgL\ndV/A4k7KU+F+9pui5/VkHaOJtpAoDGPQryLkoeeu+scHFhFE7p73Ha2fsvQ4gsAf\nuPEOJ+sYb9JO3qr0BDXhPZviSU617NE25ekI7Aa+EyRVK2pxz9jObN0WUQKBgGEd\nm4blZPqhoxE2Z7q5FcPT0TplWpLBrhsRfmx5eoNgs0QW017JhjqwxqCj/KgNPeL2\nJ0DhJ5q6B7E9uHXJDJpQGwjXENAfk1abdm56eV6/+2eay9yGRsSQimq/W1UGV3y8\nvsvA3UHaG9XlxJbkJCT6nDuiLxXKkMz2XDVJ1HFzAoGBAOfIjPeu02LHICTXaYf9\nb9GbVg1/AcmHYpGh0xrZijE3Cnaaec4WDFncZIL2vv5TAQHuZi9+I9H+BiNmKxKQ\ncvsrVOW5aNoALit8ZOIkfEMxZoVA64xALMTGLQhkSdrmmZA1nUZgDcbc7nMewZfC\ngDguNegZASpIvNhfGhriD+C3\n-----END PRIVATE KEY-----\n",
+  "client_email": "reservas-app@reservasbrasil.iam.gserviceaccount.com",
+  "client_id": "105925905271736474754",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/reservas-app%40reservasbrasil.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
