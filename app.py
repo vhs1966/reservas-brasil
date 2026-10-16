@@ -13,28 +13,26 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 @st.cache_data(ttl=2)
 def cargar_datos():
     import json
-    # Conexión directa y nativa para saltear el error de formato
-    info_claves = json.loads(st.text_area("Pegue su JSON aquí si falla", type="password", value='''
-{
+    # Cargamos el diccionario de forma nativa e independiente
+    credenciales_json = '''{
   "type": "service_account",
   "project_id": "reservasbrasil",
   "private_key_id": "8a9dc35bc6afc57cf3cc808e8b0eb3b2fc19f5b6",
-  "private_key": "-----BEGIN PRIVATE KEY-----\\nPEGAR_ACUA_EL_RESTO_DE_TU_CLAVE_LARGA_CON_DOBLE_BARRA\\n-----END PRIVATE KEY-----\\n",
+  "private_key": "-----BEGIN PRIVATE KEY-----\\nPEGAR_ACUÁ_EL_RESTO_DE_TU_CLAVE_LARGA_CON_DOBLE_BARRA\\n-----END PRIVATE KEY-----\\n",
   "client_email": "reservas-app@://gserviceaccount.com",
   "client_id": "105925905271736474754",
   "auth_uri": "https://google.com",
   "token_uri": "https://googleapis.com",
-  "auth_provider_x509_cert_url = "https://googleapis.com",
+  "auth_provider_x509_cert_url": "https://googleapis.com",
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/reservas-app%40://gserviceaccount.com",
-  "universe_domain = "googleapis.com"
-}
-'''.strip()))
+  "universe_domain": "googleapis.com"
+}'''
+    info_claves = json.loads(credenciales_json.strip())
     gc = gspread.service_account_from_dict(info_claves)
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
     return worksheet, pd.DataFrame(data)
-
 
 try:
     worksheet, df = cargar_datos()
