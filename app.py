@@ -10,8 +10,11 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 # Conexión directa y automática usando el archivo del cofre digital
 @st.cache_data(ttl=2)
 def cargar_datos():
-      # Conexión directa y nativa al archivo de la raíz
-    gc = gspread.service_account(filename='reservasbrasil-81838e28d588.json')
+    import json
+    # El sistema abre de forma nativa tu archivo nuevo sin alterar la firma digital
+    with open('reservasbrasil-81838e28d588.json', 'r') as f:
+        info_claves = json.load(f)
+    gc = gspread.service_account_from_dict(info_claves)
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
