@@ -10,13 +10,20 @@ st.title("🇧🇷 Control de Reservas - Brasil")
 # Conexión directa y automática usando el archivo del cofre digital
 @st.cache_data(ttl=2)
 def cargar_datos():
-    # El programa lee el diccionario seguro de la cajita de secretos de una
-    info_claves = st.secrets["gcp_service_account"]
-    gc = gspread.service_account_from_dict(info_claves)
+    import json
+    import os
+    
+    # Buscamos la ruta absoluta del archivo en el servidor
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    ruta_completa = os.path.join(base_dir, 'clave.json')
+    
+    # Conectamos usando la ruta física exacta
+    gc = gspread.service_account(filename=ruta_completa)
     sh = gc.open('Reservas Brasil')
     worksheet = sh.get_worksheet(0)
     data = worksheet.get_all_records()
     return worksheet, pd.DataFrame(data)
+
 try:
     worksheet, df = cargar_datos()
 except Exception as e:
