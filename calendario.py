@@ -68,13 +68,15 @@ def mostrar_calendario(df):
             "color": '#00CC96'
         })
 
-    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (AZUL) ---
+    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (AZUL FRANCIA Y NEGRITA) ---
+    # Ajustamos las propiedades CSS para lograr la estética que me pediste
     st.markdown(
         """
         <style>
         .fc-more-link {
-            color: #007BFF !important;
-            font-weight: bold !important;
+            color: #0046BF !important;       /* Azul Francia exacto */
+            font-weight: 800 !important;     /* Tipografía extra negrita (heavy) */
+            font-size: 0.85rem !important;   /* Ajuste de tamaño para asegurar lectura */
             text-decoration: none !important;
         }
         </style>
