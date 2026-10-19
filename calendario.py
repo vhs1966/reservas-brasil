@@ -23,23 +23,22 @@ def mostrar_calendario(df):
         'Reservado': '#FFD700',  # Amarillo
     }
 
-    # --- 3. PROCESAR OCUPACIONES EXISTENTES (Rojo / Amarillo con Horas fijas) ---
+    # --- 3. PROCESAR OCUPACIONES EXISTENTES (Rojo / Amarillo) ---
     for _, row in df_filtrado.iterrows():
         estado = str(row['Estado']).strip().capitalize()
         
-        # Seteamos las reservas para que ocupen desde las 14:00 (Check-In) hasta las 10:00 del día de salida (Check-Out)
-        start_str = row['Fecha de Inicio'].strftime('%Y-%m-%d') + 'T14:00:00'
-        end_str = (row['Fecha de Fin'] + timedelta(days=1)).strftime('%Y-%m-%d') + 'T10:00:00'
+        # Sumamos 1 día al final solo para la visualización del bloque ocupado
+        fecha_fin_visual = row['Fecha de Fin'] + timedelta(days=1)
         
         event = {
             "title": f"{row['Inquilino']} ({estado})",
-            "start": start_str,
-            "end": end_str,
+            "start": row['Fecha de Inicio'].strftime('%Y-%m-%d'),
+            "end": fecha_fin_visual.strftime('%Y-%m-%d'),
             "color": colores.get(estado, '#FF4B4B')
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" CON HORAS DE CORTE (Verde) ---
+    # --- 4. CÁLCULO DE HUECOS VERDES SIN SOLAPAMIENTO DE DÍAS ---
     año_actual = datetime.today().year
     fecha_actual = datetime(año_actual, 1, 1)
     fecha_limite_calendario = datetime(año_actual, 12, 31)
@@ -48,24 +47,33 @@ def mostrar_calendario(df):
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
+        # Si la fecha actual es menor al inicio, calculamos el bloque verde
         if fecha_actual < f_ini:
-            # El bloque disponible termina el día del Check-In a las 14:00 hs
-            calendar_events.append({
-                "title": "Disponible",
-                "start": fecha_actual.strftime('%Y-%m-%d') + 'T10:00:00',
-                "end": f_ini.strftime('%Y-%m-%d') + 'T14:00:00',
-                "color": '#00CC96'  # Verde
-            })
-        
-        if f_fin > fecha_actual:
-            fecha_actual = f_fin
+            # Hacemos que el bloque disponible termine EXACTAMENTE un día antes del Check-In
+            # Así evitamos que compartan el casillero en el almanaque anual
+            fecha_fin_verde = f_ini
             
-    if fecha_actual < fecha_limite_calendario:
+            # Solo agregamos el evento si el rango es válido (inicio menor a fin)
+            if fecha_actual < fecha_fin_verde:
+                calendar_events.append({
+                    "title": "Disponible",
+                    "start": fecha_actual.strftime('%Y-%m-%d'),
+                    "end": fecha_fin_verde.strftime('%Y-%m-%d'),
+                    "color": '#00CC96'  # Verde
+                })
+        
+        # Avanzamos el puntero al día SIGUIENTE del Checkout real de la reserva
+        # De esta forma, el próximo bloque disponible arranca un día después
+        if f_fin >= fecha_actual:
+            fecha_actual = f_fin + timedelta(days=1)
+            
+    # Rellenamos el espacio sobrante del año
+    if fecha_actual <= fecha_limite_calendario:
         fecha_fin_calendario_visual = fecha_limite_calendario + timedelta(days=1)
         calendar_events.append({
             "title": "Disponible",
-            "start": fecha_actual.strftime('%Y-%m-%d') + 'T10:00:00',
-            "end": fecha_fin_calendario_visual.strftime('%Y-%m-%d') + 'T10:00:00',
+            "start": fecha_actual.strftime('%Y-%m-%d'),
+            "end": fecha_fin_calendario_visual.strftime('%Y-%m-%d'),
             "color": '#00CC96'  # Verde
         })
 
