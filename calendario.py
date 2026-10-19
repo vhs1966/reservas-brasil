@@ -36,7 +36,7 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS VERDES CON SOLAPAMIENTO DE ENTRADA ---
+    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" (VERDE) ---
     año_actual = datetime.today().year
     fecha_actual = datetime(año_actual, 1, 1)
     fecha_limite_calendario = datetime(año_actual, 12, 31)
@@ -46,8 +46,7 @@ def mostrar_calendario(df):
         f_fin = row['Fecha de Fin']
         
         if fecha_actual < f_ini:
-            # CAMBIO CLAVE: Sumamos 1 día a f_ini para que el bloque verde cubra el día del Check-In.
-            # Esto fuerza a que el día de entrada comparta el verde y el amarillo/rojo, activando el cartel azul.
+            # El bloque verde cubre hasta el día del Check-In para generar la superposición limpia
             fecha_fin_verde_visual = f_ini + timedelta(days=1)
             
             calendar_events.append({
@@ -83,7 +82,7 @@ def mostrar_calendario(df):
         unsafe_allow_html=True
     )
 
-        calendar_options = {
+    calendar_options = {
         "editable": "false",
         "selectable": "false",
         "headerToolbar": {
@@ -92,7 +91,6 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        # Cambiado a 'Res.' para que sea bien corto y no se corte en pantalla
         "moreLinkText": "Res.", 
     }
 
