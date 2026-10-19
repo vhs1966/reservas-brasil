@@ -46,7 +46,6 @@ def mostrar_calendario(df):
         f_fin = row['Fecha de Fin']
         
         if fecha_actual < f_ini:
-            # El bloque verde cubre hasta el día del Check-In para generar la superposición limpia
             fecha_fin_verde_visual = f_ini + timedelta(days=1)
             
             calendar_events.append({
@@ -68,16 +67,24 @@ def mostrar_calendario(df):
             "color": '#00CC96'
         })
 
-    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (AZUL FRANCIA Y NEGRITA) ---
-    # Ajustamos las propiedades CSS para lograr la estética que me pediste
+    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (CORREGIDO PARA TEXTO INTERNO) ---
+    # Atacamos directamente al texto interno, al link y al botón para pintar todo de Azul Francia
     st.markdown(
         """
         <style>
-        .fc-more-link {
-            color: #0046BF !important;       /* Azul Francia exacto */
-            font-weight: 800 !important;     /* Tipografía extra negrita (heavy) */
-            font-size: 0.85rem !important;   /* Ajuste de tamaño para asegurar lectura */
+        .fc-more-link, 
+        .fc-more-link * {
+            color: #0046BF !important;       /* Azul Francia en las letras */
+            font-weight: bold !important;    /* Forzar negrita en las letras */
+            font-size: 0.85rem !important;
             text-decoration: none !important;
+        }
+        /* Opcional: quitamos el borde o lo ponemos en el mismo tono si preferís */
+        .fc-more-link {
+            border: 1px solid #0046BF !important;
+            padding: 2px 4px !important;
+            border-radius: 4px !important;
+            background-color: rgba(0, 70, 191, 0.05) !important; /* Un fondo azul muy sutil */
         }
         </style>
         """,
