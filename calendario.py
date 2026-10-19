@@ -74,7 +74,7 @@ def mostrar_calendario(df):
             "color": '#00CC96'  # Verde
         })
 
-      # --- 5. CONFIGURACIÓN Y RENDERIZADO ---
+        # --- 5. CONFIGURACIÓN Y RENDERIZADO ---
     calendar_options = {
         "editable": "false",
         "selectable": "false",
@@ -84,7 +84,9 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
+        "dayMaxEvents": "false",  # <-- PEGÁ ESTA LÍNEA ACÁ PARA ELIMINAR EL '+2 more'
     }
 
     calendar(events=calendar_events, options=calendar_options)
+
 
