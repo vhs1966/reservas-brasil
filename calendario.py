@@ -6,7 +6,8 @@ def mostrar_calendario(df):
     # Convertimos las fechas a formato datetime para asegurar consistencia
     # Ajusta los nombres de las columnas si en tu Google Sheet son distintos
     df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'])
-    df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'])
+    df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], errors='coerce')
+
 
     calendar_events = []
     
