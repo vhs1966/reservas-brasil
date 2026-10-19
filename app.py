@@ -109,8 +109,8 @@ with st.form("form_reserva", clear_on_submit=True):
                 st.success(f"Reserva enviada a Google Sheets. Respuesta: {resultado}")
             except Exception as e:
                 st.exception(e)
-        elif not sheet:
-            st.error("Error de conexión.")
+            elif not sheet:
+                st.error("Error de conexión.")
         else:
             st.warning("Completa los campos.")
 
