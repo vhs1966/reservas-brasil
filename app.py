@@ -81,27 +81,34 @@ with st.form("form_reserva", clear_on_submit=True):
         st.markdown(f"**Total: R$ {total_reserva:.2f}**")
         st.markdown(f"**Total: R$ {total_reserva:,.2f}** ({dias_estadia} días)")
     
-    submit = st.form_submit_button("Confirmar y Guardar")
+      submit = st.form_submit_button("Confirmar y Guardar")
 
     if submit:
-        if inquilino and telefono and sheet:
+        if not inquilino.strip() or not telefono.strip():
+            st.warning("Completá el nombre del inquilino y el teléfono.")
+        elif sheet is None:
+            st.error("No se pudo conectar con Google Sheets; revisá el error de conexión que aparece arriba.")
+        else:
             nueva_fila = [
                 depto,
-                fecha_inicio.strftime('%d/%m/%Y'),
-                fecha_fin.strftime('%d/%m/%Y'),
+                fecha_inicio.strftime("%d/%m/%Y"),
+                fecha_fin.strftime("%d/%m/%Y"),
                 estado,
-                inquilino,
-                telefono,
+                inquilino.strip(),
+                telefono.strip(),
                 dias_estadia,
                 precio,
-                total_reserva
+                total_reserva,
             ]
+
             try:
-                sheet.append_row(nueva_fila)
-                st.success("✅ Guardado")
-                st.rerun()
+                resultado = sheet.append_row(
+                    nueva_fila,
+                    value_input_option="USER_ENTERED"
+                )
+                st.success(f"Reserva enviada a Google Sheets. Respuesta: {resultado}")
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.exception(e)
         elif not sheet:
             st.error("Error de conexión.")
         else:
