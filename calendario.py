@@ -40,20 +40,19 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS VERDES EXTENDIDO (DESDE DICIEMBRE ANTERIOR) ---
-    año_actual = datetime.today().year
-    
-    # SOLUCIÓN: Arrancamos el cálculo el 1 de Diciembre del año anterior 
-    # para capturar las reservas cruzadas de fin de año
-    fecha_actual = datetime(año_actual - 1, 12, 1).date()
-    fecha_limite_calendario = datetime(año_actual, 12, 31).date()
+    # --- 4. CÁLCULO DE HUECOS VERDES (DESDE EL 1 DE DICIEMBRE DE 2026) ---
+    # Fijamos el inicio estricto en diciembre de 2026 para que enganche la reserva del 28 de diciembre
+    fecha_actual = datetime(2026, 12, 1).date()
+    fecha_limite_calendario = datetime(2027, 12, 31).date()
     
     for _, row in df_filtrado.iterrows():
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
         if fecha_actual < f_ini:
+            # El bloque verde cubre hasta el día del Check-In para generar la superposición limpia
             fecha_fin_verde_visual = f_ini + timedelta(days=1)
+            
             calendar_events.append({
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
@@ -96,7 +95,12 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        "moreLinkText": "Res.", 
+        "moreLinkText": "Res.",
+        # FORZAMOS AL CALENDARIO A MOSTRAR EL RANGO VISUAL COMPLETO DESDE DICIEMBRE 2026
+        "validRange": {
+            "start": "2026-12-01",
+            "end": "2028-01-01"
+        }
     }
 
     calendar(events=calendar_events, options=calendar_options)
