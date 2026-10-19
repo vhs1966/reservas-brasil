@@ -8,6 +8,10 @@ def mostrar_calendario(df):
     df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce', format='mixed')
     df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce', format='mixed')
     
+    # ELIMINAR LA HORA: Convertimos las columnas para que conserven SOLO la fecha limpia (sin 00:00:00)
+    df['Fecha de Inicio'] = df['Fecha de Inicio'].dt.date
+    df['Fecha de Fin'] = df['Fecha de Fin'].dt.date
+
     # --- 2. OBTENER DEPARTAMENTOS Y FILTRAR ---
     lista_deptos = sorted(df['Departamento'].dropna().unique().tolist())
     depto_seleccionado = st.selectbox("🏢 Selecciona un Departamento:", lista_deptos)
@@ -38,8 +42,8 @@ def mostrar_calendario(df):
 
     # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" (VERDE) ---
     año_actual = datetime.today().year
-    fecha_actual = datetime(año_actual, 1, 1)
-    fecha_limite_calendario = datetime(año_actual, 12, 31)
+    fecha_actual = datetime(año_actual, 1, 1).date()  # Seteado como date puro para comparar bien
+    fecha_limite_calendario = datetime(año_actual, 12, 31).date()
     
     for _, row in df_filtrado.iterrows():
         f_ini = row['Fecha de Inicio']
@@ -47,7 +51,6 @@ def mostrar_calendario(df):
         
         if fecha_actual < f_ini:
             fecha_fin_verde_visual = f_ini + timedelta(days=1)
-            
             calendar_events.append({
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
@@ -67,24 +70,14 @@ def mostrar_calendario(df):
             "color": '#00CC96'
         })
 
-    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (CORREGIDO PARA TEXTO INTERNO) ---
-    # Atacamos directamente al texto interno, al link y al botón para pintar todo de Azul Francia
+    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (AZUL) ---
     st.markdown(
         """
         <style>
-        .fc-more-link, 
-        .fc-more-link * {
-            color: #0046BF !important;       /* Azul Francia en las letras */
-            font-weight: bold !important;    /* Forzar negrita en las letras */
-            font-size: 0.85rem !important;
-            text-decoration: none !important;
-        }
-        /* Opcional: quitamos el borde o lo ponemos en el mismo tono si preferís */
         .fc-more-link {
-            border: 1px solid #0046BF !important;
-            padding: 2px 4px !important;
-            border-radius: 4px !important;
-            background-color: rgba(0, 70, 191, 0.05) !important; /* Un fondo azul muy sutil */
+            color: #007BFF !important;
+            font-weight: bold !important;
+            text-decoration: none !important;
         }
         </style>
         """,
