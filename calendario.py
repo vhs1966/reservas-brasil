@@ -4,73 +4,77 @@ from streamlit_calendar import calendar
 from datetime import datetime, timedelta
 
 def mostrar_calendario(df):
-    # 1. Limpieza inicial de datos con fechas válidas
-    df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], errors='coerce')
-    df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], errors='coerce')
-    df = df.dropna(subset=['Fecha de Inicio', 'Fecha de Fin'])
+    # --- 1. CONFIGURACIÓN SEGURA DE FORMATO DE FECHAS ---
+    # Forzamos 'dayfirst=True' y 'mixed' para solucionar el desfasaje masivo de días/meses invertidos
+    df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce', format='mixed')
+    df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce', format='mixed')
     
-    # 2. FILTRO POR DEPARTAMENTO
-    # Extraemos la lista de departamentos únicos para el selector
-    lista_deptos = sorted(df['Departamento'].unique().tolist())
+    # --- 2. OBTENER DEPARTAMENTOS Y FILTRAR ---
+    lista_deptos = sorted(df['Departamento'].dropna().unique().tolist())
     depto_seleccionado = st.selectbox("🏢 Selecciona un Departamento:", lista_deptos)
     
-    # Filtramos el DataFrame para quedarnos solo con los datos del departamento elegido
-    df_filtrado = df[df['Departamento'] == depto_seleccionado].sort_values(by='Fecha de Inicio')
+    # Filtramos por el departamento seleccionado y trabajamos sobre una copia limpia
+    df_filtrado = df[df['Departamento'] == depto_seleccionado].copy()
+    df_filtrado = df_filtrado.dropna(subset=['Fecha de Inicio', 'Fecha de Fin'])
+    
+    # Ordenamos de forma estrictamente cronológica por Fecha de Inicio
+    df_filtrado = df_filtrado.sort_values(by='Fecha de Inicio')
 
     calendar_events = []
     
-    # Mapeo de colores fijos para Alquilado y Reservado
     colores = {
         'Alquilado': '#FF4B4B',  # Rojo
         'Reservado': '#FFD700',  # Amarillo
     }
 
-    # --- AGREGAR OCUPACIONES EXISTENTES (Rojo / Amarillo) ---
+    # --- 3. PROCESAR OCUPACIONES EXISTENTES (Rojo / Amarillo) ---
     for _, row in df_filtrado.iterrows():
         estado = str(row['Estado']).strip().capitalize()
+        
+        # Ajustamos +1 día solo en la visualización porque FullCalendar corta a las 00:00 del día final
+        fecha_fin_visual = row['Fecha de Fin'] + timedelta(days=1)
+        
         event = {
             "title": f"{row['Departamento']} - {row['Inquilino']} ({estado})",
             "start": row['Fecha de Inicio'].strftime('%Y-%m-%d'),
-            "end": row['Fecha de Fin'].strftime('%Y-%m-%d'),
-            "color": colores.get(estado, '#FF4B4B') # Rojo por defecto si hay dudas
+            "end": fecha_fin_visual.strftime('%Y-%m-%d'),
+            "color": colores.get(estado, '#FF4B4B')
         }
         calendar_events.append(event)
 
-    # --- CALCULAR AUTOMÁTICAMENTE LOS DÍAS DISPONIBLES (Verde) ---
-    # Definimos el rango del calendario: desde hoy hasta fin de año (ej. 31 de Diciembre)
-    fecha_inicio_calendario = datetime.today()
-    fecha_fin_calendario = datetime(fecha_inicio_calendario.year, 12, 31)
+    # --- 4. CÁLCULO EXACTO DE BLOQUES "DISPONIBLE" (Verde) ---
+    # El calendario calculará los huecos partiendo desde el 1 de Enero del año actual
+    año_actual = datetime.today().year
+    fecha_actual = datetime(año_actual, 1, 1)
+    fecha_limite_calendario = datetime(año_actual, 12, 31)
     
-    # Ordenamos los rangos ocupados cronológicamente para medir los huecos
-    periodos_ocupados = []
     for _, row in df_filtrado.iterrows():
-        periodos_ocupados.append((row['Fecha de Inicio'], row['Fecha de Fin']))
-    
-    # Algoritmo para encontrar ventanas libres
-    fecha_actual = fecha_inicio_calendario
-    for inicio_p, fin_p in periodos_ocupados:
-        # Si la fecha actual es anterior al inicio de una reserva, ese hueco está Disponible
-        if fecha_actual < inicio_p:
+        f_ini = row['Fecha de Inicio']
+        f_fin = row['Fecha de Fin']
+        
+        # Si hay un hueco de días libres antes de la reserva actual
+        if fecha_actual < f_ini:
             calendar_events.append({
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
-                "end": inicio_p.strftime('%Y-%m-%d'),
+                "end": f_ini.strftime('%Y-%m-%d'),
                 "color": '#00CC96'  # Verde
             })
-        # Avanzamos nuestra posición al fin de esta ocupación para seguir evaluando
-        if fin_p > fecha_actual:
-            fecha_actual = fin_p
+        
+        # Avanzamos el puntero al día posterior al Checkout real de la reserva
+        if f_fin >= fecha_actual:
+            fecha_actual = f_fin + timedelta(days=1)
             
-    # Si después de la última reserva analizada queda tiempo hasta fin de año, lo marcamos Disponible
-    if fecha_actual < fecha_fin_calendario:
+    # Rellenamos el espacio sobrante hasta fin de año si aplica
+    if fecha_actual <= fecha_limite_calendario:
         calendar_events.append({
             "title": "Disponible",
             "start": fecha_actual.strftime('%Y-%m-%d'),
-            "end": fecha_fin_calendario.strftime('%Y-%m-%d'),
+            "end": (fecha_limite_calendario + timedelta(days=1)).strftime('%Y-%m-%d'),
             "color": '#00CC96'  # Verde
         })
 
-    # 3. Configuración de opciones del calendario
+    # --- 5. CONFIGURACIÓN Y RENDERIZADO ---
     calendar_options = {
         "editable": "false",
         "selectable": "false",
@@ -82,5 +86,4 @@ def mostrar_calendario(df):
         "initialView": "dayGridMonth",
     }
 
-    # Renderizamos el calendario con los eventos de ocupación + los huecos verdes automáticos
     calendar(events=calendar_events, options=calendar_options)
