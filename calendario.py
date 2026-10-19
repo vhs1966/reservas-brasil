@@ -65,12 +65,11 @@ def mostrar_calendario(df):
             "color": '#00CC96'
         })
 
-    # --- 5. CONFIGURACIÓN AVANZADA DE TEXTO Y ESTILOS (AZUL) ---
-    # Agregamos estilos CSS personalizados para pintar la palabra "Recambio" en azul sin tocar el resto
+    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (AZUL) ---
+    # Forzamos con CSS que el link flotante se vea azul y prolijo
     st.markdown(
         """
         <style>
-        /* Selecciona el enlace de 'más eventos' del calendario y lo pinta de azul fuerte */
         .fc-more-link {
             color: #007BFF !important;
             font-weight: bold !important;
@@ -90,8 +89,8 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        # Usamos una función JavaScript para interceptar el número y retornar SOLO el texto limpio
-        "moreLinkText": "js:function(num) { return 'Recambio'; }",
+        # Al poner 'Reservas', el calendario va a armar la frase '+2 Reservas' automáticamente
+        "moreLinkText": "Reservas", 
     }
 
     calendar(events=calendar_events, options=calendar_options)
