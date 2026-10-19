@@ -8,7 +8,7 @@ def mostrar_calendario(df):
     df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce', format='mixed')
     df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce', format='mixed')
     
-    # ELIMINAR LA HORA: Convertimos las columnas para que conserven SOLO la fecha limpia (sin 00:00:00)
+    # Eliminamos la hora para que la tabla de historial quede limpia
     df['Fecha de Inicio'] = df['Fecha de Inicio'].dt.date
     df['Fecha de Fin'] = df['Fecha de Fin'].dt.date
 
@@ -40,9 +40,12 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" (VERDE) ---
+    # --- 4. CÁLCULO DE HUECOS VERDES EXTENDIDO (DESDE DICIEMBRE ANTERIOR) ---
     año_actual = datetime.today().year
-    fecha_actual = datetime(año_actual, 1, 1).date()  # Seteado como date puro para comparar bien
+    
+    # SOLUCIÓN: Arrancamos el cálculo el 1 de Diciembre del año anterior 
+    # para capturar las reservas cruzadas de fin de año
+    fecha_actual = datetime(año_actual - 1, 12, 1).date()
     fecha_limite_calendario = datetime(año_actual, 12, 31).date()
     
     for _, row in df_filtrado.iterrows():
