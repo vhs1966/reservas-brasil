@@ -47,7 +47,6 @@ def mostrar_calendario(df):
         
         if fecha_actual < f_ini:
             fecha_fin_verde_visual = f_ini + timedelta(days=1)
-            
             calendar_events.append({
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
@@ -67,30 +66,7 @@ def mostrar_calendario(df):
             "color": '#00CC96'
         })
 
-    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (CORREGIDO PARA TEXTO INTERNO) ---
-    # Atacamos directamente al texto interno, al link y al botón para pintar todo de Azul Francia
-    st.markdown(
-        """
-        <style>
-        .fc-more-link, 
-        .fc-more-link * {
-            color: #0046BF !important;       /* Azul Francia en las letras */
-            font-weight: bold !important;    /* Forzar negrita en las letras */
-            font-size: 0.85rem !important;
-            text-decoration: none !important;
-        }
-        /* Opcional: quitamos el borde o lo ponemos en el mismo tono si preferís */
-        .fc-more-link {
-            border: 1px solid #0046BF !important;
-            padding: 2px 4px !important;
-            border-radius: 4px !important;
-            background-color: rgba(0, 70, 191, 0.05) !important; /* Un fondo azul muy sutil */
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
+    # --- 5. CONFIGURACIÓN Y RENDERIZADO (ESTILO INYECTADO DIRECTAMENTE) ---
     calendar_options = {
         "editable": "false",
         "selectable": "false",
@@ -100,7 +76,32 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        "moreLinkText": "Res.", 
+        "moreLinkText": "Res.",
+        # El truco: Inyectamos estilos directamente en el núcleo del FullCalendar
+        "themeSystem": "standard",
+        "eventSourceSuccess": "js:function() { document.querySelectorAll('.fc-more-link').forEach(el => { el.style.color = '#0046BF'; el.style.fontWeight = 'bold'; }); }",
     }
+
+    # Como la inyección por JS puede fallar si la librería es restrictiva, 
+    # la alternativa más limpia y nativa que soporta FullCalendar es pasar variables CSS en un custom stylesheet inyectado por Streamlit Components.
+    # Para asegurar el tiro, mantenemos una inyección general optimizada:
+    st.components.v1.html(
+        """
+        <script>
+        parent.document.querySelectorAll('iframe').forEach(iframe => {
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+            var style = doc.createElement('style');
+            style.innerHTML = `
+                .fc-more-link, .fc-more-link * { 
+                    color: #0046BF !important; 
+                    font-weight: bold !important; 
+                }
+            `;
+            doc.head.appendChild(style);
+        });
+        </script>
+        """,
+        height=0
+    )
 
     calendar(events=calendar_events, options=calendar_options)
