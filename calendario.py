@@ -3,11 +3,12 @@ import pandas as pd
 from streamlit_calendar import calendar
 
 def mostrar_calendario(df):
-    # Convertimos las fechas a formato datetime para asegurar consistencia
-    # Ajusta los nombres de las columnas si en tu Google Sheet son distintos
-    df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'])
+    # 1. Convertimos las fechas a formato datetime de forma segura (con errors='coerce')
+    df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], errors='coerce')
     df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], errors='coerce')
 
+    # 2. FILTRADO: Eliminamos cualquier fila que se haya quedado sin una fecha de inicio o de fin válida
+    df = df.dropna(subset=['Fecha de Inicio', 'Fecha de Fin'])
 
     calendar_events = []
     
