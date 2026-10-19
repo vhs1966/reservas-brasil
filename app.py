@@ -83,11 +83,11 @@ with st.form("form_reserva", clear_on_submit=True):
     
     submit = st.form_submit_button("Confirmar y Guardar")
 
-    if submit:
+       if submit:
         if not inquilino.strip() or not telefono.strip():
-            st.warning("Completá el nombre del inquilino y el teléfono.")
+            st.warning("Completa los campos.")
         elif sheet is None:
-            st.error("No se pudo conectar con Google Sheets; revisá el error de conexión que aparece arriba.")
+            st.error("Error de conexión con Google Sheets.")
         else:
             nueva_fila = [
                 depto,
@@ -106,9 +106,12 @@ with st.form("form_reserva", clear_on_submit=True):
                     nueva_fila,
                     value_input_option="USER_ENTERED"
                 )
-                st.success(f"Reserva enviada a Google Sheets. Respuesta: {resultado}")
+                st.success(
+                    f"Reserva enviada a Google Sheets. Respuesta: {resultado}"
+                )
             except Exception as e:
                 st.exception(e)
+
             elif not sheet:
                 st.error("Error de conexión.")
         else:
