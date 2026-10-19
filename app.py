@@ -3,7 +3,6 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-from streamlit_calendar import calendar
 
 # Configuración de la página
 st.set_page_config(
