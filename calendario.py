@@ -27,32 +27,50 @@ def mostrar_calendario(df):
         'Reservado': '#FFD700',  # Amarillo
     }
 
-    # --- 3. PROCESAR OCUPACIONES EXISTENTES ---
+    # Definimos los límites estrictos del año actual en pantalla (2027)
+    año_pantalla = 2027
+    limite_inferior = datetime(año_pantalla, 1, 1).date()
+    limite_superior = datetime(año_pantalla, 12, 31).date()
+
+    # --- 3. PROCESAR OCUPACIONES EXISTENTES CON CORTE DE AÑO ---
     for _, row in df_filtrado.iterrows():
         estado = str(row['Estado']).strip().capitalize()
-        fecha_fin_visual = row['Fecha de Fin'] + timedelta(days=1)
+        
+        f_inicio_real = row['Fecha de Inicio']
+        f_fin_real = row['Fecha de Fin']
+        
+        # Si la reserva termina antes de este año o empieza después, la salteamos
+        if f_fin_real < limite_inferior or f_inicio_real > limite_superior:
+            continue
+            
+        # SOLUCIÓN CRUCE DE AÑO: Si empezó en diciembre del año anterior, forzamos el inicio visual al 1 de Enero
+        f_inicio_visual = max(f_inicio_real, limite_inferior)
+        f_fin_visual = min(f_fin_real, limite_superior) + timedelta(days=1)
         
         event = {
             "title": f"{row['Departamento']} - {row['Inquilino']} ({estado})",
-            "start": row['Fecha de Inicio'].strftime('%Y-%m-%d'),
-            "end": fecha_fin_visual.strftime('%Y-%m-%d'),
+            "start": f_inicio_visual.strftime('%Y-%m-%d'),
+            "end": f_fin_visual.strftime('%Y-%m-%d'),
             "color": colores.get(estado, '#FF4B4B')
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS VERDES (DESDE EL 1 DE DICIEMBRE DE 2026) ---
-    # Fijamos el inicio estricto en diciembre de 2026 para que enganche la reserva del 28 de diciembre
-    fecha_actual = datetime(2026, 12, 1).date()
-    fecha_limite_calendario = datetime(2027, 12, 31).date()
+    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" (VERDE) ---
+    fecha_actual = limite_inferior
     
     for _, row in df_filtrado.iterrows():
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
-        if fecha_actual < f_ini:
-            # El bloque verde cubre hasta el día del Check-In para generar la superposición limpia
-            fecha_fin_verde_visual = f_ini + timedelta(days=1)
+        # Ignoramos reservas obsoletas para el cálculo del verde
+        if f_fin < limite_inferior:
+            continue
             
+        # Ajustamos el inicio al límite de la pantalla si viene de antes
+        f_ini_ajustada = max(f_ini, limite_inferior)
+        
+        if fecha_actual < f_ini_ajustada:
+            fecha_fin_verde_visual = f_ini_ajustada + timedelta(days=1)
             calendar_events.append({
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
@@ -63,8 +81,8 @@ def mostrar_calendario(df):
         if f_fin > fecha_actual:
             fecha_actual = f_fin
             
-    if fecha_actual < fecha_limite_calendario:
-        fecha_fin_calendario_visual = fecha_limite_calendario + timedelta(days=1)
+    if fecha_actual < limite_superior:
+        fecha_fin_calendario_visual = limite_superior + timedelta(days=1)
         calendar_events.append({
             "title": "Disponible",
             "start": fecha_actual.strftime('%Y-%m-%d'),
@@ -95,12 +113,7 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        "moreLinkText": "Res.",
-        # FORZAMOS AL CALENDARIO A MOSTRAR EL RANGO VISUAL COMPLETO DESDE DICIEMBRE 2026
-        "validRange": {
-            "start": "2026-12-01",
-            "end": "2028-01-01"
-        }
+        "moreLinkText": "Res.", 
     }
 
     calendar(events=calendar_events, options=calendar_options)
