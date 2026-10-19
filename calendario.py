@@ -30,8 +30,6 @@ def mostrar_calendario(df):
     # --- 3. PROCESAR OCUPACIONES EXISTENTES ---
     for _, row in df_filtrado.iterrows():
         estado = str(row['Estado']).strip().capitalize()
-        
-        # Sumamos 1 día al cierre para la visualización exacta en el almanaque
         fecha_fin_visual = row['Fecha de Fin'] + timedelta(days=1)
         
         event = {
@@ -42,7 +40,7 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" ORIGINAL (DESDE EL 1 DE ENERO) ---
+    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" ORIGINAL ---
     año_actual = datetime.today().year
     fecha_actual = datetime(año_actual, 1, 1).date()
     fecha_limite_calendario = datetime(año_actual, 12, 31).date()
@@ -51,7 +49,6 @@ def mostrar_calendario(df):
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
-        # Ignoramos reservas viejas del año pasado
         if f_fin < fecha_actual:
             continue
             
@@ -62,7 +59,7 @@ def mostrar_calendario(df):
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
                 "end": f_ini_ajustada.strftime('%Y-%m-%d'),
-                "color": '#00CC96'  # Verde
+                "color": '#00CC96'
             })
         
         if f_fin > fecha_actual:
@@ -74,10 +71,10 @@ def mostrar_calendario(df):
             "title": "Disponible",
             "start": fecha_actual.strftime('%Y-%m-%d'),
             "end": fecha_fin_calendario_visual.strftime('%Y-%m-%d'),
-            "color": '#00CC96'  # Verde
+            "color": '#00CC96'
         })
 
-    # --- 5. CONFIGURACIÓN Y RENDERIZADO ORIGINAL ---
+    # --- 5. CONFIGURACIÓN Y RENDERIZADO CON DIAS COMPLEMENTARIOS ---
     calendar_options = {
         "editable": "false",
         "selectable": "false",
@@ -87,6 +84,8 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
+        # SOLUCIÓN: Forza a que se muestren siempre los números de los días de los meses vecinos
+        "showNonCurrentDates": "true",
     }
 
     calendar(events=calendar_events, options=calendar_options)
