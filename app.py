@@ -149,14 +149,14 @@ if submit:
             total_reserva,
         ]
 
-          try:
-                respuesta = sheet.append_row(
-                    nueva_fila,
-                    value_input_option="USER_ENTERED",
-                )
-                st.success(f"Respuesta de Google Sheets: {respuesta}")
-            except Exception as e:
-                st.error(f"No se pudo guardar la reserva: {e}")
+    try:
+            respuesta = sheet.append_row(
+                nueva_fila,
+                value_input_option="USER_ENTERED",
+            )
+            st.success(f"Respuesta de Google Sheets: {respuesta}")
+    except Exception as e:
+            st.error(f"No se pudo guardar la reserva: {e}")
 
 
 
