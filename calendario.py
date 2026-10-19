@@ -83,7 +83,7 @@ def mostrar_calendario(df):
         unsafe_allow_html=True
     )
 
-    calendar_options = {
+        calendar_options = {
         "editable": "false",
         "selectable": "false",
         "headerToolbar": {
@@ -92,8 +92,8 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        # Cambiado a 'Ocupaciones' para que englobe mejor alquileres, reservas y días libres compartidos
-        "moreLinkText": "Ocupaciones", 
+        # Cambiado a 'Res.' para que sea bien corto y no se corte en pantalla
+        "moreLinkText": "Res.", 
     }
 
     calendar(events=calendar_events, options=calendar_options)
