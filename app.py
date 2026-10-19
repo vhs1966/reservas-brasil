@@ -164,6 +164,7 @@ if submit:
 st.subheader("📋 Historial")
 
 df = obtener_datos(sheet)
+st.write(df.columns.tolist())
 mostrar_calendario(df)
 
 if not df.empty:
