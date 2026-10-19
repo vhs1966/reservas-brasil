@@ -23,11 +23,9 @@ def mostrar_calendario(df):
         'Reservado': '#FFD700',  # Amarillo
     }
 
-    # --- 3. PROCESAR OCUPACIONES EXISTENTES (Volvemos a la estructura original) ---
+    # --- 3. PROCESAR OCUPACIONES EXISTENTES ---
     for _, row in df_filtrado.iterrows():
         estado = str(row['Estado']).strip().capitalize()
-        
-        # Sumamos 1 día exacto al cierre para que cubra la última noche visualmente
         fecha_fin_visual = row['Fecha de Fin'] + timedelta(days=1)
         
         event = {
@@ -38,7 +36,7 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" ORIGINAL (Vuelven los bloques verdes continuos) ---
+    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" (VERDE) ---
     año_actual = datetime.today().year
     fecha_actual = datetime(año_actual, 1, 1)
     fecha_limite_calendario = datetime(año_actual, 12, 31)
@@ -52,7 +50,7 @@ def mostrar_calendario(df):
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
                 "end": f_ini.strftime('%Y-%m-%d'),
-                "color": '#00CC96'  # Verde
+                "color": '#00CC96'
             })
         
         if f_fin > fecha_actual:
@@ -64,10 +62,25 @@ def mostrar_calendario(df):
             "title": "Disponible",
             "start": fecha_actual.strftime('%Y-%m-%d'),
             "end": fecha_fin_calendario_visual.strftime('%Y-%m-%d'),
-            "color": '#00CC96'  # Verde
+            "color": '#00CC96'
         })
 
-    # --- 5. CONFIGURACIÓN CON TEXTO PERSONALIZADO PARA EL "+ MORE" ---
+    # --- 5. CONFIGURACIÓN AVANZADA DE TEXTO Y ESTILOS (AZUL) ---
+    # Agregamos estilos CSS personalizados para pintar la palabra "Recambio" en azul sin tocar el resto
+    st.markdown(
+        """
+        <style>
+        /* Selecciona el enlace de 'más eventos' del calendario y lo pinta de azul fuerte */
+        .fc-more-link {
+            color: #007BFF !important;
+            font-weight: bold !important;
+            text-decoration: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     calendar_options = {
         "editable": "false",
         "selectable": "false",
@@ -77,8 +90,8 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        # Cambiamos el texto '+ X more' por la palabra exacta que necesitás ver
-        "moreLinkText": "Recambio", 
+        # Usamos una función JavaScript para interceptar el número y retornar SOLO el texto limpio
+        "moreLinkText": "js:function(num) { return 'Recambio'; }",
     }
 
     calendar(events=calendar_events, options=calendar_options)
