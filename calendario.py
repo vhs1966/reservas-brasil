@@ -27,23 +27,20 @@ def mostrar_calendario(df):
         'Reservado': '#FFD700',  # Amarillo
     }
 
-    # Definimos los límites estrictos del año actual en pantalla (2027)
-    año_pantalla = 2027
-    limite_inferior = datetime(año_pantalla, 1, 1).date()
-    limite_superior = datetime(año_pantalla, 12, 31).date()
+    # Ajustamos el límite inferior a diciembre del año anterior para que el algoritmo procese todo
+    limite_inferior = datetime(2026, 12, 1).date()
+    limite_superior = datetime(2027, 12, 31).date()
 
-    # --- 3. PROCESAR OCUPACIONES EXISTENTES CON CORTE DE AÑO ---
+    # --- 3. PROCESAR OCUPACIONES EXISTENTES ---
     for _, row in df_filtrado.iterrows():
         estado = str(row['Estado']).strip().capitalize()
         
         f_inicio_real = row['Fecha de Inicio']
         f_fin_real = row['Fecha de Fin']
         
-        # Si la reserva termina antes de este año o empieza después, la salteamos
         if f_fin_real < limite_inferior or f_inicio_real > limite_superior:
             continue
             
-        # SOLUCIÓN CRUCE DE AÑO: Si empezó en diciembre del año anterior, forzamos el inicio visual al 1 de Enero
         f_inicio_visual = max(f_inicio_real, limite_inferior)
         f_fin_visual = min(f_fin_real, limite_superior) + timedelta(days=1)
         
@@ -62,11 +59,9 @@ def mostrar_calendario(df):
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
-        # Ignoramos reservas obsoletas para el cálculo del verde
         if f_fin < limite_inferior:
             continue
             
-        # Ajustamos el inicio al límite de la pantalla si viene de antes
         f_ini_ajustada = max(f_ini, limite_inferior)
         
         if fecha_actual < f_ini_ajustada:
@@ -113,7 +108,9 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        "moreLinkText": "Res.", 
+        "moreLinkText": "Res.",
+        # CAMBIO SEGURO: Forzamos de forma nativa al calendario a arrancar su vista visual en diciembre de 2026
+        "initialDate": "2026-12-01",
     }
 
     calendar(events=calendar_events, options=calendar_options)
