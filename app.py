@@ -164,7 +164,7 @@ if submit:
 st.subheader("📋 Historial")
 
 df = obtener_datos(sheet)
-st.write(df[["Fecha de Inicio", "Fecha de Fin"]].head(10))
+#st.write(df[["Fecha de Inicio", "Fecha de Fin"]].head(10))
 mostrar_calendario(df)
 
 if not df.empty:
