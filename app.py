@@ -158,38 +158,6 @@ if submit:
             st.success(f"Reserva guardada. Respuesta de Google Sheets: {respuesta}")
         except Exception as e:
             st.error(f"No se pudo guardar la reserva: {e}")
-# --- INTEGRACIÓN CALENDARIO ---
-st.subheader("📅 Calendario de Reservas")
-
-# Convertir datos a formato de calendario
-events = []
-if not df.empty:
-    for _, row in df.iterrows():
-        # Ajustamos el formato de fecha de "dd/mm/yyyy" a "yyyy-mm-dd"
-        start_date = pd.to_datetime(row['Inicio'], dayfirst=True).strftime("%Y-%m-%d")
-        end_date = pd.to_datetime(row['Fin'], dayfirst=True).strftime("%Y-%m-%d")
-        
-        events.append({
-            "title": f"{row['Inquilino']} - {row['Departamento']}",
-            "start": start_date,
-            "end": end_date,
-            "backgroundColor": "#FF4B4B" if row['Estado'] == 'Alquilado' else "#FFB74D",
-        })
-
-# Configuración y visualización
-calendar_options = {
-    "editable": "false",
-    "selectable": "false",
-    "headerToolbar": {
-        "left": "prev,next today",
-        "center": "title",
-        "right": "dayGridMonth,timeGridWeek"
-    },
-    "initialView": "dayGridMonth",
-}
-
-calendar(events=events, options=calendar_options)
-# ------------------------------
 
 
 # Historial
