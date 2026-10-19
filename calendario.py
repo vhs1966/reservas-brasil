@@ -27,78 +27,57 @@ def mostrar_calendario(df):
         'Reservado': '#FFD700',  # Amarillo
     }
 
-    # Ajustamos el límite inferior a diciembre del año anterior para que el algoritmo procese todo
-    limite_inferior = datetime(2026, 12, 1).date()
-    limite_superior = datetime(2027, 12, 31).date()
-
     # --- 3. PROCESAR OCUPACIONES EXISTENTES ---
     for _, row in df_filtrado.iterrows():
         estado = str(row['Estado']).strip().capitalize()
         
-        f_inicio_real = row['Fecha de Inicio']
-        f_fin_real = row['Fecha de Fin']
-        
-        if f_fin_real < limite_inferior or f_inicio_real > limite_superior:
-            continue
-            
-        f_inicio_visual = max(f_inicio_real, limite_inferior)
-        f_fin_visual = min(f_fin_real, limite_superior) + timedelta(days=1)
+        # Sumamos 1 día al cierre para la visualización (así pisa enero si viene de diciembre)
+        fecha_fin_visual = row['Fecha de Fin'] + timedelta(days=1)
         
         event = {
             "title": f"{row['Departamento']} - {row['Inquilino']} ({estado})",
-            "start": f_inicio_visual.strftime('%Y-%m-%d'),
-            "end": f_fin_visual.strftime('%Y-%m-%d'),
+            "start": row['Fecha de Inicio'].strftime('%Y-%m-%d'),
+            "end": fecha_fin_visual.strftime('%Y-%m-%d'),
             "color": colores.get(estado, '#FF4B4B')
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" (VERDE) ---
-    fecha_actual = limite_inferior
+    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" ORIGINAL (DESDE EL 1 DE ENERO) ---
+    año_actual = datetime.today().year
+    fecha_actual = datetime(año_actual, 1, 1).date()
+    fecha_limite_calendario = datetime(año_actual, 12, 31).date()
     
     for _, row in df_filtrado.iterrows():
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
-        if f_fin < limite_inferior:
+        # Ignoramos reservas obsoletas que terminaron el año pasado
+        if f_fin < fecha_actual:
             continue
             
-        f_ini_ajustada = max(f_ini, limite_inferior)
+        f_ini_ajustada = max(f_ini, fecha_actual)
         
         if fecha_actual < f_ini_ajustada:
-            fecha_fin_verde_visual = f_ini_ajustada + timedelta(days=1)
             calendar_events.append({
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
-                "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
-                "color": '#00CC96'
+                "end": f_ini_ajustada.strftime('%Y-%m-%d'),
+                "color": '#00CC96'  # Verde
             })
         
         if f_fin > fecha_actual:
             fecha_actual = f_fin
             
-    if fecha_actual < limite_superior:
-        fecha_fin_calendario_visual = limite_superior + timedelta(days=1)
+    if fecha_actual < fecha_limite_calendario:
+        fecha_fin_calendario_visual = fecha_limite_calendario + timedelta(days=1)
         calendar_events.append({
             "title": "Disponible",
             "start": fecha_actual.strftime('%Y-%m-%d'),
             "end": fecha_fin_calendario_visual.strftime('%Y-%m-%d'),
-            "color": '#00CC96'
+            "color": '#00CC96'  # Verde
         })
 
-    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (AZUL) ---
-    st.markdown(
-        """
-        <style>
-        .fc-more-link {
-            color: #007BFF !important;
-            font-weight: bold !important;
-            text-decoration: none !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
+    # --- 5. CONFIGURACIÓN Y RENDERIZADO ORIGINAL ---
     calendar_options = {
         "editable": "false",
         "selectable": "false",
@@ -108,9 +87,6 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        "moreLinkText": "Res.",
-        # CAMBIO SEGURO: Forzamos de forma nativa al calendario a arrancar su vista visual en diciembre de 2026
-        "initialDate": "2026-12-01",
     }
 
     calendar(events=calendar_events, options=calendar_options)
