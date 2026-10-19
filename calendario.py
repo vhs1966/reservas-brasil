@@ -74,16 +74,17 @@ def mostrar_calendario(df):
             "color": '#00CC96'  # Verde
         })
 
-    # --- 5. CONFIGURACIÓN Y RENDERIZADO ---
+      # --- 5. CONFIGURACIÓN Y RENDERIZADO ---
     calendar_options = {
         "editable": "false",
         "selectable": "false",
         "headerToolbar": {
             "left": "today prev,next",
             "center": "title",
-            "right": "dayGridMonth,dayGridWeek",
+            "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
-        "initialView": "dayGridMonth",
+        "initialView": "multiMonthYear",
     }
 
     calendar(events=calendar_events, options=calendar_options)
+
