@@ -36,7 +36,7 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" (VERDE) ---
+    # --- 4. CÁLCULO DE HUECOS VERDES CON SOLAPAMIENTO DE ENTRADA ---
     año_actual = datetime.today().year
     fecha_actual = datetime(año_actual, 1, 1)
     fecha_limite_calendario = datetime(año_actual, 12, 31)
@@ -46,10 +46,14 @@ def mostrar_calendario(df):
         f_fin = row['Fecha de Fin']
         
         if fecha_actual < f_ini:
+            # CAMBIO CLAVE: Sumamos 1 día a f_ini para que el bloque verde cubra el día del Check-In.
+            # Esto fuerza a que el día de entrada comparta el verde y el amarillo/rojo, activando el cartel azul.
+            fecha_fin_verde_visual = f_ini + timedelta(days=1)
+            
             calendar_events.append({
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
-                "end": f_ini.strftime('%Y-%m-%d'),
+                "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
                 "color": '#00CC96'
             })
         
@@ -66,7 +70,6 @@ def mostrar_calendario(df):
         })
 
     # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (AZUL) ---
-    # Forzamos con CSS que el link flotante se vea azul y prolijo
     st.markdown(
         """
         <style>
@@ -89,8 +92,8 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        # Al poner 'Reservas', el calendario va a armar la frase '+2 Reservas' automáticamente
-        "moreLinkText": "Reservas", 
+        # Cambiado a 'Ocupaciones' para que englobe mejor alquileres, reservas y días libres compartidos
+        "moreLinkText": "Ocupaciones", 
     }
 
     calendar(events=calendar_events, options=calendar_options)
