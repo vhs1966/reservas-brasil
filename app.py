@@ -81,7 +81,7 @@ with st.form("form_reserva", clear_on_submit=True):
         st.markdown(f"**Total: R$ {total_reserva:.2f}**")
         st.markdown(f"**Total: R$ {total_reserva:,.2f}** ({dias_estadia} días)")
     
-      submit = st.form_submit_button("Confirmar y Guardar")
+    submit = st.form_submit_button("Confirmar y Guardar")
 
     if submit:
         if not inquilino.strip() or not telefono.strip():
