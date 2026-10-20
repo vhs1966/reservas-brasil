@@ -8,7 +8,7 @@ def mostrar_calendario(df):
     df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce', format='mixed')
     df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce', format='mixed')
     
-    # Limpiamos las horas de las columnas
+    # Eliminamos las horas para mantener la consistencia en el historial
     df['Fecha de Inicio'] = df['Fecha de Inicio'].dt.date
     df['Fecha de Fin'] = df['Fecha de Fin'].dt.date
 
@@ -40,40 +40,57 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" ARREGLADO PARA FIN DE AÑO ---
-    año_actual = 2027  # Año de la pantalla actual
+    # --- 4. CÁLCULO DE HUECOS VERDES OPTIMIZADO PARA EVITAR COLAPSO EN MÓVILES ---
+    año_actual = 2027  # Año principal de la pantalla
+    fecha_limite_calendario = datetime(año_actual, 12, 31).date()
+    hoy = datetime.today().date()
     
-    # Buscamos si el departamento ya viene ocupado desde diciembre del año anterior
-    reserva_previa = df_filtrado[df_filtrado['Fecha de Inicio'] < datetime(año_actual, 1, 1).date()]
+    # Determinamos el inicio del bloque verde para este departamento contemplando fin de año
+    reserva_fin_de_ano = df_filtrado[df_filtrado['Fecha de Inicio'] < datetime(año_actual, 1, 1).date()]
     
-    if not reserva_previa.empty:
-        # Si ya venía ocupado (ej. hasta el 9 de enero), el cálculo disponible arranca el día del checkout real
-        ultima_fecha_previa = reserva_previa['Fecha de Fin'].max()
-        fecha_actual = max(datetime(año_actual, 1, 1).date(), ultima_fecha_previa)
+    if not reserva_fin_de_ano.empty:
+        ultima_fecha_fin = reserva_fin_de_ano['Fecha de Fin'].max()
+        fecha_actual = max(datetime(año_actual, 1, 1).date(), ultima_fecha_fin)
     else:
-        # Si no había nada a fin de año, arrancamos libres el 1 de enero
         fecha_actual = datetime(año_actual, 1, 1).date()
         
-    fecha_limite_calendario = datetime(año_actual, 12, 31).date()
-    
     for _, row in df_filtrado.iterrows():
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
-        # Ignoramos la reserva previa porque ya la contemplamos en el punto de partida
         if f_fin <= fecha_actual:
             continue
             
         if fecha_actual < f_ini:
-            # Estiramos el bloque verde +1 día para forzar el cruce exacto en el check-in (ej. día 18)
             fecha_fin_verde_visual = f_ini + timedelta(days=1)
             
-            calendar_events.append({
-                "title": "Disponible",
-                "start": fecha_actual.strftime('%Y-%m-%d'),
-                "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
-                "color": '#00CC96'  # Verde
-            })
+            # LA VUELTA TÉCNICA CLAVE: Si el bloque disponible pertenece enteramente al pasado, 
+            # fragmentamos las fechas libres para no saturar el alto de la celda de FullCalendar en móviles.
+            if fecha_fin_verde_visual < hoy:
+                puntero_pasado = fecha_actual
+                while puntero_pasado < f_ini:
+                    calendar_events.append({
+                        "title": "Disponible",
+                        "start": puntero_pasado.strftime('%Y-%m-%d'),
+                        "end": (puntero_pasado + timedelta(days=1)).strftime('%Y-%m-%d'),
+                        "color": '#00CC96'
+                    })
+                    puntero_pasado += timedelta(days=1)
+                # Aseguramos el cruce exacto en el casillero del Check-In
+                calendar_events.append({
+                    "title": "Disponible",
+                    "start": f_ini.strftime('%Y-%m-%d'),
+                    "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
+                    "color": '#00CC96'
+                })
+            else:
+                # Si es una fecha futura o actual, mandamos el bloque largo normal para que se intersecte perfecto
+                calendar_events.append({
+                    "title": "Disponible",
+                    "start": fecha_actual.strftime('%Y-%m-%d'),
+                    "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
+                    "color": '#00CC96'
+                })
         
         if f_fin > fecha_actual:
             fecha_actual = f_fin
