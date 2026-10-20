@@ -96,11 +96,11 @@ with st.form("form_reserva", clear_on_submit=True):
     f1, f2 = st.columns(2)
 
     with f1:
-        # CORRECCIÓN FORMULARIO: Agregamos format="DD/MM/YYYY" para cambiar el orden visual en pantalla
+        # Formato regional correcto para el selector visual del formulario
         fecha_inicio = st.date_input("Inicio", value=datetime.now().date(), format="DD/MM/YYYY")
 
     with f2:
-        # CORRECCIÓN FORMULARIO: Agregamos format="DD/MM/YYYY" para cambiar el orden visual en pantalla
+        # Formato regional correcto para el selector visual del formulario
         fecha_fin = st.date_input("Fin", value=datetime.now().date(), format="DD/MM/YYYY")
 
     # Inquilino y teléfono
@@ -167,19 +167,21 @@ st.subheader("📋 Historial")
 
 df = obtener_datos(sheet)
 
-# Dejamos que el calendario procese el DataFrame puro con su lógica interna
+# 1. El calendario recibe el DataFrame original intacto y puro para que funcione de diez
 mostrar_calendario(df)
 
 if not df.empty:
-    # --- CONVERSIÓN ESTRICTA A TEXTO PARA LA TABLA DEL HISTORIAL ---
-    # Pasamos las columnas a formato de tiempo para ordenarlas cronológicamente
-    df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce')
-    df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce')
+    # 2. SEPARACIÓN DE DATOS: Creamos una copia exclusiva para formatear la tabla de abajo
+    df_visual = df.copy()
     
-    # Transformamos a texto fijo para que Streamlit no de vuelta los valores en la tabla de abajo
-    df['Fecha de Inicio'] = df['Fecha de Inicio'].dt.strftime('%d/%m/%Y')
-    df['Fecha de Fin'] = df['Fecha de Fin'].dt.strftime('%d/%m/%Y')
+    # Convertimos a tiempo la copia e inyectamos el formato de texto DD/MM/AAAA obligatorio
+    df_visual['Fecha de Inicio'] = pd.to_datetime(df_visual['Fecha de Inicio'], dayfirst=True, errors='coerce')
+    df_visual['Fecha de Fin'] = pd.to_datetime(df_visual['Fecha de Fin'], dayfirst=True, errors='coerce')
     
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    df_visual['Fecha de Inicio'] = df_visual['Fecha de Inicio'].dt.strftime('%d/%m/%Y')
+    df_visual['Fecha de Fin'] = df_visual['Fecha de Fin'].dt.strftime('%d/%m/%Y')
+    
+    # Dibujamos la tabla visual usando la copia formateada en texto
+    st.dataframe(df_visual, use_container_width=True, hide_index=True)
 else:
     st.info("Sin datos.")
