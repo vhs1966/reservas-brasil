@@ -1,187 +1,130 @@
 import streamlit as st
 import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
-from datetime import datetime
-from calendario import mostrar_calendario
+from streamlit_calendar import calendar
+from datetime import datetime, timedelta
 
-# Configuración de la página
-st.set_page_config(
-    page_title="BR Control de Reservas",
-    layout="wide",
-)
-
-# Estilos
-st.markdown(
-    """
-    <style>
-    .main .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-    h1 {
-        font-size: 1.5rem !important;
-        margin-bottom: 0.5rem;
-    }
-    h2 {
-        font-size: 1.2rem !important;
-        margin-top: 1rem;
-    }
-    .stNumberInput, .stTextInput, .stDateInput, .stSelectbox {
-        margin-bottom: -10px;
-    }
-    div[data-testid="stForm"] {
-        padding: 10px;
-        border-radius: 10px;
-    }
-    input {
-        font-size: 14px !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Conexión a Google Sheets
-def conectar_gsheets():
-    try:
-        scope = ["https://googleapis.com"]
-        creds = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"],
-            scopes=scope,
-        )
-        client = gspread.authorize(creds)
-
-        spreadsheet_id = "1ch4-13lpkAZRdN3cuj5QJTLAKs5bUIW8K3ckbzbVhZw"
-        return client.open_by_key(spreadsheet_id).get_worksheet(0)
-
-    except Exception as e:
-        st.error(f"Error de conexión con Google Sheets: {e}")
-        return None
-
-
-def obtener_datos(sheet):
-    if sheet is None:
-        return pd.DataFrame()
-
-    try:
-        return pd.DataFrame(sheet.get_all_records())
-    except Exception as e:
-        st.error(f"No se pudo leer el historial: {e}")
-        return pd.DataFrame()
-
-
-# Interfaz
-st.title("🇧🇷 Control de Reservas")
-
-sheet = conectar_gsheets()
-
-with st.form("form_reserva", clear_on_submit=True):
-    # Departamento y estado
-    c1, c2 = st.columns(2)
-
-    with c1:
-        depto = st.selectbox(
-            "Departamento",
-            ["Robles", "Naciones", "Costa"],
-        )
-
-    with c2:
-        estado = st.selectbox(
-            "Estado",
-            ["Alquilado", "Disponible", "Reservado"],
-        )
-
-    # Fechas
-    f1, f2 = st.columns(2)
-
-    with f1:
-        # Formato regional correcto para el selector visual del formulario
-        fecha_inicio = st.date_input("Inicio", value=datetime.now().date(), format="DD/MM/YYYY")
-
-    with f2:
-        # Formato regional correcto para el selector visual del formulario
-        fecha_fin = st.date_input("Fin", value=datetime.now().date(), format="DD/MM/YYYY")
-
-    # Inquilino y teléfono
-    i1, i2 = st.columns(2)
-
-    with i1:
-        inquilino = st.text_input("Inquilino")
-
-    with i2:
-        telefono = st.text_input("Teléfono")
-
-    # Precio y total
-    p1, p2 = st.columns(2)
-
-    with p1:
-        precio = st.number_input(
-            "Precio por Día (R$)",
-            min_value=0.0,
-            step=10.0,
-            format="%.2f",
-        )
-
-    dias_estadia = max((fecha_fin - fecha_inicio).days, 0)
-    total_reserva = dias_estadia * precio
-
-    with p2:
-        st.markdown(f"**Total: R$ {total_reserva:,.2f}** ({dias_estadia} días)")
-
-    submit = st.form_submit_button("Confirmar y Guardar")
-
-
-if submit:
-    if not inquilino.strip() or not telefono.strip():
-        st.warning("Completá el nombre del inquilino y el teléfono.")
-    elif dias_estadia <= 0:
-        st.warning("La fecha de fin debe ser posterior a la fecha de inicio.")
-    elif sheet is None:
-        st.error("No hay conexión con Google Sheets. Revisá la configuración.")
-    else:
-        nueva_fila = [
-            depto,
-            fecha_inicio.strftime("%d/%m/%Y"),
-            fecha_fin.strftime("%d/%m/%Y"),
-            estado,
-            inquilino.strip(),
-            telefono.strip(),
-            dias_estadia,
-            precio,
-            total_reserva,
-        ]
-
-        try:
-            respuesta = sheet.append_row(
-                nueva_fila,
-                value_input_option="USER_ENTERED",
-            )
-            st.success(f"Reserva guardada. Respuesta de Google Sheets: {respuesta}")
-        except Exception as e:
-            st.error(f"No se pudo guardar la reserva: {e}")
-
-
-# Historial
-st.subheader("📋 Historial")
-
-df = obtener_datos(sheet)
-
-# 1. El calendario recibe el DataFrame original intacto y puro para que funcione de diez
-mostrar_calendario(df)
-
-if not df.empty:
-    # 2. SEPARACIÓN DE DATOS: Creamos una copia exclusiva para formatear la tabla de abajo
-    df_visual = df.copy()
+def mostrar_calendario(df):
+    # --- 1. CONFIGURACIÓN SEGURA DE FORMATO DE FECHAS ---
+    df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce', format='mixed')
+    df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce', format='mixed')
     
-    # Convertimos a tiempo la copia e inyectamos el formato de texto DD/MM/AAAA obligatorio
-    df_visual['Fecha de Inicio'] = pd.to_datetime(df_visual['Fecha de Inicio'], dayfirst=True, errors='coerce')
-    df_visual['Fecha de Fin'] = pd.to_datetime(df_visual['Fecha de Fin'], dayfirst=True, errors='coerce')
+    # Eliminamos las horas para mantener la consistencia interna
+    df['Fecha de Inicio'] = df['Fecha de Inicio'].dt.date
+    df['Fecha de Fin'] = df['Fecha de Fin'].dt.date
+
+    # --- 2. OBTENER DEPARTAMENTOS Y FILTRAR ---
+    lista_deptos = sorted(df['Departamento'].dropna().unique().tolist())
+    depto_seleccionado = st.selectbox("🏢 Selecciona un Departamento:", lista_deptos)
     
-    df_visual['Fecha de Inicio'] = df_visual['Fecha de Inicio'].dt.strftime('%d/%m/%Y')
-    df_visual['Fecha de Fin'] = df_visual['Fecha de Fin'].dt.strftime('%d/%m/%Y')
+    df_filtrado = df[df['Departamento'] == depto_seleccionado].copy()
+    df_filtrado = df_filtrado.dropna(subset=['Fecha de Inicio', 'Fecha de Fin'])
+    df_filtrado = df_filtrado.sort_values(by='Fecha de Inicio')
+
+    calendar_events = []
     
-    # Dibujamos la tabla visual usando la copia formateada en texto
-    st.dataframe(df_visual, use_container_width=True, hide_index=True)
-else:
-    st.info("Sin datos.")
+    colores = {
+        'Alquilado': '#FF4B4B',  # Rojo
+        'Reservado': '#FFD700',  # Amarillo
+    }
+
+    # --- 3. PROCESAR OCUPACIONES EXISTENTES ---
+    for _, row in df_filtrado.iterrows():
+        estado = str(row['Estado']).strip().capitalize()
+        fecha_fin_visual = row['Fecha de Fin'] + timedelta(days=1)
+        
+        event = {
+            "title": f"{row['Departamento']} - {row['Inquilino']} ({estado})",
+            "start": row['Fecha de Inicio'].strftime('%Y-%m-%d'),
+            "end": fecha_fin_visual.strftime('%Y-%m-%d'),
+            "color": colores.get(estado, '#FF4B4B')
+        }
+        calendar_events.append(event)
+
+    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" ORIGINAL ---
+    año_actual = 2027
+    fecha_actual = datetime(año_actual, 1, 1).date()
+    fecha_limite_calendario = datetime(año_actual, 12, 31).date()
+    
+    for _, row in df_filtrado.iterrows():
+        f_ini = row['Fecha de Inicio']
+        f_fin = row['Fecha de Fin']
+        
+        if f_fin < fecha_actual:
+            continue
+            
+        f_ini_ajustada = max(f_ini, fecha_actual)
+        
+        if fecha_actual < f_ini_ajustada:
+            fecha_fin_verde_visual = f_ini_ajustada + timedelta(days=1)
+            
+            calendar_events.append({
+                "title": "Disponible",
+                "start": fecha_actual.strftime('%Y-%m-%d'),
+                "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
+                "color": '#00CC96'
+            })
+        
+        if f_fin > fecha_actual:
+            fecha_actual = f_fin
+            
+    if fecha_actual < fecha_limite_calendario:
+        fecha_fin_calendario_visual = fecha_limite_calendario + timedelta(days=1)
+        calendar_events.append({
+            "title": "Disponible",
+            "start": fecha_actual.strftime('%Y-%m-%d'),
+            "end": fecha_fin_calendario_visual.strftime('%Y-%m-%d'),
+            "color": '#00CC96'
+        })
+
+    # --- 5. CONFIGURACIÓN DE ESTILOS CSS ---
+    st.markdown(
+        """
+        <style>
+        .fc-multimonth-day {
+            min-height: 42px !important;
+        }
+        .fc-event {
+            margin-top: 1px !important;
+            margin-bottom: 1px !important;
+            padding: 0px 2px !important;
+            font-size: 9px !important;
+            line-height: 11px !important;
+        }
+        .fc-more-link {
+            color: #0046BF !important;
+            font-weight: bold !important;
+            font-size: 9px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    calendar_options = {
+        "editable": "false",
+        "selectable": "false",
+        "headerToolbar": {
+            "left": "today prev,next",
+            "center": "title",
+            "right": "multiMonthYear,dayGridMonth,dayGridWeek",
+        },
+        "initialView": "multiMonthYear",
+        "showNonCurrentDates": "true",
+        "moreLinkText": "Res.",
+        "dayMaxEvents": 2,
+    }
+
+    # Renderizamos el calendario
+    calendar(events=calendar_events, options=calendar_options)
+
+    # --- 6. FORMATEAR TABLA VISUAL (NUEVO: DD/MM/AAAA) ---
+    # Creamos una copia de la tabla filtrada para cambiar el formato visual sin romper el calendario
+    df_tabla_visual = df_filtrado.copy()
+    
+    # Transformamos el formato de visualización a Día/Mes/Año de forma prolija
+    df_tabla_visual['Fecha de Inicio'] = pd.to_datetime(df_tabla_visual['Fecha de Inicio']).dt.strftime('%d/%m/%Y')
+    df_tabla_visual['Fecha de Fin'] = pd.to_datetime(df_tabla_visual['Fecha de Fin']).dt.strftime('%d/%m/%Y')
+
+    # Si tu listado impreso abajo usa st.dataframe o st.table, podés mostrar esta nueva variable:
+    st.subheader("📋 Listado de Reservas Seleccionadas")
+    st.dataframe(df_tabla_visual, use_container_width=True)
