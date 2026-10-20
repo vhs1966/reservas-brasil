@@ -45,7 +45,7 @@ st.markdown(
 # Conexión a Google Sheets
 def conectar_gsheets():
     try:
-        scope = ["https://www.googleapis.com/auth/spreadsheets"]
+        scope = ["https://googleapis.com"]
         creds = Credentials.from_service_account_info(
             st.secrets["gcp_service_account"],
             scopes=scope,
@@ -96,10 +96,12 @@ with st.form("form_reserva", clear_on_submit=True):
     f1, f2 = st.columns(2)
 
     with f1:
-        fecha_inicio = st.date_input("Inicio", value=datetime.now().date())
+        # CORRECCIÓN FORMULARIO: Agregamos format="DD/MM/YYYY" para cambiar el orden visual en pantalla
+        fecha_inicio = st.date_input("Inicio", value=datetime.now().date(), format="DD/MM/YYYY")
 
     with f2:
-        fecha_fin = st.date_input("Fin", value=datetime.now().date())
+        # CORRECCIÓN FORMULARIO: Agregamos format="DD/MM/YYYY" para cambiar el orden visual en pantalla
+        fecha_fin = st.date_input("Fin", value=datetime.now().date(), format="DD/MM/YYYY")
 
     # Inquilino y teléfono
     i1, i2 = st.columns(2)
@@ -164,10 +166,20 @@ if submit:
 st.subheader("📋 Historial")
 
 df = obtener_datos(sheet)
-#st.write(df[["Fecha de Inicio", "Fecha de Fin"]].head(10))
+
+# Dejamos que el calendario procese el DataFrame puro con su lógica interna
 mostrar_calendario(df)
 
 if not df.empty:
+    # --- CONVERSIÓN ESTRICTA A TEXTO PARA LA TABLA DEL HISTORIAL ---
+    # Pasamos las columnas a formato de tiempo para ordenarlas cronológicamente
+    df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce')
+    df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce')
+    
+    # Transformamos a texto fijo para que Streamlit no de vuelta los valores en la tabla de abajo
+    df['Fecha de Inicio'] = df['Fecha de Inicio'].dt.strftime('%d/%m/%Y')
+    df['Fecha de Fin'] = df['Fecha de Fin'].dt.strftime('%d/%m/%Y')
+    
     st.dataframe(df, use_container_width=True, hide_index=True)
 else:
     st.info("Sin datos.")
