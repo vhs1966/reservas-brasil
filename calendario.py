@@ -8,7 +8,7 @@ def mostrar_calendario(df):
     df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce', format='mixed')
     df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce', format='mixed')
     
-    # Eliminamos la hora para mantener la consistencia visual en las tablas
+    # Limpiamos las horas de las columnas
     df['Fecha de Inicio'] = df['Fecha de Inicio'].dt.date
     df['Fecha de Fin'] = df['Fecha de Fin'].dt.date
 
@@ -40,24 +40,33 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" CON EXTENSIÓN PARA CRUCE ---
-    año_actual = datetime.today().year
-    fecha_actual = datetime(año_actual, 1, 1).date()
+    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" ARREGLADO PARA FIN DE AÑO ---
+    año_actual = 2027  # Año de la pantalla actual
+    
+    # Buscamos si el departamento ya viene ocupado desde diciembre del año anterior
+    reserva_previa = df_filtrado[df_filtrado['Fecha de Inicio'] < datetime(año_actual, 1, 1).date()]
+    
+    if not reserva_previa.empty:
+        # Si ya venía ocupado (ej. hasta el 9 de enero), el cálculo disponible arranca el día del checkout real
+        ultima_fecha_previa = reserva_previa['Fecha de Fin'].max()
+        fecha_actual = max(datetime(año_actual, 1, 1).date(), ultima_fecha_previa)
+    else:
+        # Si no había nada a fin de año, arrancamos libres el 1 de enero
+        fecha_actual = datetime(año_actual, 1, 1).date()
+        
     fecha_limite_calendario = datetime(año_actual, 12, 31).date()
     
     for _, row in df_filtrado.iterrows():
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
-        if f_fin < fecha_actual:
+        # Ignoramos la reserva previa porque ya la contemplamos en el punto de partida
+        if f_fin <= fecha_actual:
             continue
             
-        f_ini_ajustada = max(f_ini, fecha_actual)
-        
-        if fecha_actual < f_ini_ajustada:
-            # CORRECCIÓN: Sumamos 1 día al final del bloque verde para forzar el solapamiento 
-            # en el casillero del check-in tanto en la vista anual como en la mensual
-            fecha_fin_verde_visual = f_ini_ajustada + timedelta(days=1)
+        if fecha_actual < f_ini:
+            # Estiramos el bloque verde +1 día para forzar el cruce exacto en el check-in (ej. día 18)
+            fecha_fin_verde_visual = f_ini + timedelta(days=1)
             
             calendar_events.append({
                 "title": "Disponible",
@@ -75,10 +84,23 @@ def mostrar_calendario(df):
             "title": "Disponible",
             "start": fecha_actual.strftime('%Y-%m-%d'),
             "end": fecha_fin_calendario_visual.strftime('%Y-%m-%d'),
-            "color": '#00CC96'  # Verde
+            "color": '#00CC96'
         })
 
-    # --- 5. CONFIGURACIÓN Y RENDERIZADO ORIGINAL ---
+    # --- 5. CONFIGURACIÓN DE TEXTO Y ESTILOS (AZUL FRANCIA) ---
+    st.markdown(
+        """
+        <style>
+        .fc-more-link {
+            color: #0046BF !important;
+            font-weight: bold !important;
+            text-decoration: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     calendar_options = {
         "editable": "false",
         "selectable": "false",
@@ -89,6 +111,7 @@ def mostrar_calendario(df):
         },
         "initialView": "multiMonthYear",
         "showNonCurrentDates": "true",
+        "moreLinkText": "Res.", 
     }
 
     calendar(events=calendar_events, options=calendar_options)
