@@ -30,6 +30,7 @@ def mostrar_calendario(df):
     # --- 3. PROCESAR OCUPACIONES EXISTENTES ---
     for _, row in df_filtrado.iterrows():
         estado = str(row['Estado']).strip().capitalize()
+        # Sumamos 1 día al cierre para la visualización (cubre la última noche reservada)
         fecha_fin_visual = row['Fecha de Fin'] + timedelta(days=1)
         
         event = {
@@ -40,61 +41,44 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS VERDES OPTIMIZADO PARA EVITAR COLAPSO EN MÓVILES ---
+    # --- 4. CÁLCULO DE HUECOS VERDES OPTIMIZADO (SIN SOLAPAMIENTO EN ENERO) ---
     año_actual = 2027  # Año principal de la pantalla
     fecha_limite_calendario = datetime(año_actual, 12, 31).date()
-    hoy = datetime.today().date()
     
-    # Determinamos el inicio del bloque verde para este departamento contemplando fin de año
+    # Verificamos si este departamento específico viene ocupado desde Diciembre del año anterior
     reserva_fin_de_ano = df_filtrado[df_filtrado['Fecha de Inicio'] < datetime(año_actual, 1, 1).date()]
     
     if not reserva_fin_de_ano.empty:
+        # Si venía ocupado, el primer bloque disponible arrancará el día del checkout real (+1 día de margen para el cruce)
         ultima_fecha_fin = reserva_fin_de_ano['Fecha de Fin'].max()
         fecha_actual = max(datetime(año_actual, 1, 1).date(), ultima_fecha_fin)
     else:
+        # Si empezaba el año libre, arrancamos el bloque verde desde el 1 de Enero normal
         fecha_actual = datetime(año_actual, 1, 1).date()
         
     for _, row in df_filtrado.iterrows():
         f_ini = row['Fecha de Inicio']
         f_fin = row['Fecha de Fin']
         
+        # Ignoramos registros obsoletos que cierran antes o en el mismo punto de nuestro puntero actual
         if f_fin <= fecha_actual:
             continue
             
         if fecha_actual < f_ini:
+            # Sincronizamos el cruce de recambio sumando 1 día exacto al bloque verde
             fecha_fin_verde_visual = f_ini + timedelta(days=1)
             
-            # LA VUELTA TÉCNICA CLAVE: Si el bloque disponible pertenece enteramente al pasado, 
-            # fragmentamos las fechas libres para no saturar el alto de la celda de FullCalendar en móviles.
-            if fecha_fin_verde_visual < hoy:
-                puntero_pasado = fecha_actual
-                while puntero_pasado < f_ini:
-                    calendar_events.append({
-                        "title": "Disponible",
-                        "start": puntero_pasado.strftime('%Y-%m-%d'),
-                        "end": (puntero_pasado + timedelta(days=1)).strftime('%Y-%m-%d'),
-                        "color": '#00CC96'
-                    })
-                    puntero_pasado += timedelta(days=1)
-                # Aseguramos el cruce exacto en el casillero del Check-In
-                calendar_events.append({
-                    "title": "Disponible",
-                    "start": f_ini.strftime('%Y-%m-%d'),
-                    "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
-                    "color": '#00CC96'
-                })
-            else:
-                # Si es una fecha futura o actual, mandamos el bloque largo normal para que se intersecte perfecto
-                calendar_events.append({
-                    "title": "Disponible",
-                    "start": fecha_actual.strftime('%Y-%m-%d'),
-                    "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
-                    "color": '#00CC96'
-                })
+            calendar_events.append({
+                "title": "Disponible",
+                "start": fecha_actual.strftime('%Y-%m-%d'),
+                "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
+                "color": '#00CC96'  # Verde
+            })
         
         if f_fin > fecha_actual:
             fecha_actual = f_fin
             
+    # Rellenamos el tramo final hasta el cierre del año
     if fecha_actual < fecha_limite_calendario:
         fecha_fin_calendario_visual = fecha_limite_calendario + timedelta(days=1)
         calendar_events.append({
@@ -109,8 +93,8 @@ def mostrar_calendario(df):
         """
         <style>
         .fc-more-link {
-            color: #0046BF !important;
-            font-weight: bold !important;
+            color: #0046BF !important;       /* Azul Francia fuerte */
+            font-weight: bold !important;    /* Negrita destacada */
             text-decoration: none !important;
         }
         </style>
