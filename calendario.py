@@ -8,7 +8,7 @@ def mostrar_calendario(df):
     df['Fecha de Inicio'] = pd.to_datetime(df['Fecha de Inicio'], dayfirst=True, errors='coerce', format='mixed')
     df['Fecha de Fin'] = pd.to_datetime(df['Fecha de Fin'], dayfirst=True, errors='coerce', format='mixed')
     
-    # Eliminamos la hora para que la tabla de historial quede limpia
+    # Eliminamos la hora para mantener la consistencia visual en las tablas
     df['Fecha de Inicio'] = df['Fecha de Inicio'].dt.date
     df['Fecha de Fin'] = df['Fecha de Fin'].dt.date
 
@@ -40,7 +40,7 @@ def mostrar_calendario(df):
         }
         calendar_events.append(event)
 
-    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" ORIGINAL ---
+    # --- 4. CÁLCULO DE HUECOS "DISPONIBLE" CON EXTENSIÓN PARA CRUCE ---
     año_actual = datetime.today().year
     fecha_actual = datetime(año_actual, 1, 1).date()
     fecha_limite_calendario = datetime(año_actual, 12, 31).date()
@@ -55,11 +55,15 @@ def mostrar_calendario(df):
         f_ini_ajustada = max(f_ini, fecha_actual)
         
         if fecha_actual < f_ini_ajustada:
+            # CORRECCIÓN: Sumamos 1 día al final del bloque verde para forzar el solapamiento 
+            # en el casillero del check-in tanto en la vista anual como en la mensual
+            fecha_fin_verde_visual = f_ini_ajustada + timedelta(days=1)
+            
             calendar_events.append({
                 "title": "Disponible",
                 "start": fecha_actual.strftime('%Y-%m-%d'),
-                "end": f_ini_ajustada.strftime('%Y-%m-%d'),
-                "color": '#00CC96'
+                "end": fecha_fin_verde_visual.strftime('%Y-%m-%d'),
+                "color": '#00CC96'  # Verde
             })
         
         if f_fin > fecha_actual:
@@ -71,10 +75,10 @@ def mostrar_calendario(df):
             "title": "Disponible",
             "start": fecha_actual.strftime('%Y-%m-%d'),
             "end": fecha_fin_calendario_visual.strftime('%Y-%m-%d'),
-            "color": '#00CC96'
+            "color": '#00CC96'  # Verde
         })
 
-    # --- 5. CONFIGURACIÓN Y RENDERIZADO CON DIAS COMPLEMENTARIOS ---
+    # --- 5. CONFIGURACIÓN Y RENDERIZADO ORIGINAL ---
     calendar_options = {
         "editable": "false",
         "selectable": "false",
@@ -84,7 +88,6 @@ def mostrar_calendario(df):
             "right": "multiMonthYear,dayGridMonth,dayGridWeek",
         },
         "initialView": "multiMonthYear",
-        # SOLUCIÓN: Forza a que se muestren siempre los números de los días de los meses vecinos
         "showNonCurrentDates": "true",
     }
 
