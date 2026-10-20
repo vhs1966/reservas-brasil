@@ -51,57 +51,85 @@ def conectar_gsheets():
             scopes=scope,
         )
         client = gspread.authorize(creds)
+
         spreadsheet_id = "1ch4-13lpkAZRdN3cuj5QJTLAKs5bUIW8K3ckbzbVhZw"
         return client.open_by_key(spreadsheet_id).get_worksheet(0)
+
     except Exception as e:
         st.error(f"Error de conexión con Google Sheets: {e}")
         return None
 
+
 def obtener_datos(sheet):
     if sheet is None:
         return pd.DataFrame()
+
     try:
         return pd.DataFrame(sheet.get_all_records())
     except Exception as e:
         st.error(f"No se pudo leer el historial: {e}")
         return pd.DataFrame()
 
-# Interfaz principal
+
+# Interfaz
 st.title("🇧🇷 Control de Reservas")
 
 sheet = conectar_gsheets()
 df_base = obtener_datos(sheet)
 
 with st.form("form_reserva", clear_on_submit=True):
+    # Departamento y estado
     c1, c2 = st.columns(2)
-    with c1:
-        depto = st.selectbox("Departamento", ["Robles", "Naciones", "Costa"])
-    with c2:
-        estado = st.selectbox("Estado", ["Alquilado", "Disponible", "Reservado"])
 
+    with c1:
+        depto = st.selectbox(
+            "Departamento",
+            ["Robles", "Naciones", "Costa"],
+        )
+
+    with c2:
+        estado = st.selectbox(
+            "Estado",
+            ["Alquilado", "Disponible", "Reservado"],
+        )
+
+    # Fechas
     f1, f2 = st.columns(2)
+
     with f1:
         fecha_inicio = st.date_input("Inicio", value=datetime.now().date(), format="DD/MM/YYYY")
+
     with f2:
         fecha_fin = st.date_input("Fin", value=datetime.now().date(), format="DD/MM/YYYY")
 
+    # Inquilino y teléfono
     i1, i2 = st.columns(2)
+
     with i1:
         inquilino = st.text_input("Inquilino")
+
     with i2:
         telefono = st.text_input("Teléfono")
 
+    # Precio y total
     p1, p2 = st.columns(2)
+
     with p1:
-        precio = st.number_input("Precio por Día (R$)", min_value=0.0, step=10.0, format="%.2f")
+        precio = st.number_input(
+            "Precio por Día (R$)",
+            min_value=0.0,
+            step=10.0,
+            format="%.2f",
+        )
 
     dias_estadia = max((fecha_fin - fecha_inicio).days, 0)
-    total_reserva = dias_estadia * precio
+    total_reserva = dias_estadia * precio  # <-- CORREGIDO ACÁ: Usamos 'precio' como en tu backup
 
     with p2:
         st.markdown(f"**Total: R$ {total_reserva:,.2f}** ({dias_estadia} días)")
 
     submit = st.form_submit_button("Confirmar y Guardar")
+
 
 if submit:
     if not inquilino.strip() or not telefono.strip():
@@ -109,20 +137,24 @@ if submit:
     elif dias_estadia <= 0:
         st.warning("La fecha de fin debe ser posterior a la fecha de inicio.")
     elif sheet is None:
-        st.error("No hay conexión con Google Sheets.")
+        st.error("No hay conexión con Google Sheets. Revisá la configuración.")
     else:
+        # --- CONTROL DE SUPERPOSICIÓN DE FECHAS (ALGORITMO SEGURO) ---
         colision = False
         nombre_ocupante = ""
         estado_ocupante = ""
         
         if not df_base.empty:
+            # Filtramos por el departamento seleccionado y solo estados que ocupen lugar
             df_control = df_base[(df_base['Departamento'] == depto) & (df_base['Estado'].isin(['Alquilado', 'Reservado']))].copy()
             
+            # Convertimos temporalmente a tipo fecha para validar el rango matemático
             df_control['f_ini_check'] = pd.to_datetime(df_control['Fecha de Inicio'], dayfirst=True, errors='coerce').dt.date
             df_control['f_fin_check'] = pd.to_datetime(df_control['Fecha de Fin'], dayfirst=True, errors='coerce').dt.date
             
             for _, row in df_control.iterrows():
                 if pd.notna(row['f_ini_check']) and pd.notna(row['f_fin_check']):
+                    # Si el nuevo rango se solapa con una reserva existente
                     if fecha_inicio < row['f_fin_check'] and fecha_fin > row['f_ini_check']:
                         colision = True
                         nombre_ocupante = row['Inquilino']
@@ -143,21 +175,26 @@ if submit:
                 precio,
                 total_reserva,
             ]
+
             try:
-                sheet.append_row(nueva_fila, value_input_option="USER_ENTERED")
+                respuesta = sheet.append_row(
+                    nueva_fila,
+                    value_input_option="USER_ENTERED",
+                )
                 st.success(f"Reserva guardada con éxito.")
-                st.experimental_rerun()
+                st.rerun()
             except Exception as e:
                 st.error(f"No se pudo guardar la reserva: {e}")
+
 
 # Historial
 st.subheader("📋 Historial")
 
-# Le pasamos una copia limpia al calendario para asegurar que funcione siempre
 if not df_base.empty:
+    # Enviamos una copia exacta y limpia al calendario para asegurar que levante perfecto
     mostrar_calendario(df_base.copy())
     
-    # Creamos el formateo exclusivo de texto para la tabla de abajo
+    # Creamos la variable visual separada para que la tabla conserve el formato en español
     df_visual = df_base.copy()
     df_visual['Fecha de Inicio'] = pd.to_datetime(df_visual['Fecha de Inicio'], dayfirst=True, errors='coerce').dt.strftime('%d/%m/%Y')
     df_visual['Fecha de Fin'] = pd.to_datetime(df_visual['Fecha de Fin'], dayfirst=True, errors='coerce').dt.strftime('%d/%m/%Y')
